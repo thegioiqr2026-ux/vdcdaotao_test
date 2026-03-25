@@ -1,4 +1,4 @@
-// Phiên bản: 1.11
+// Phiên bản: 1.12
 // File Logic điều phối trung tâm của Dashboard (TEST)
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update } from './firebase-config.js';
@@ -15,27 +15,50 @@ onAuthStateChanged(auth, (user) => {
 async function loadComponent(id, file) {
     try {
         const response = await fetch(file);
-        if (response.ok) document.getElementById(id).innerHTML = await response.text();
+        if (response.ok) {
+            document.getElementById(id).innerHTML = await response.text();
+        } else {
+            console.error(`Lỗi tải file: ${file}`);
+        }
     } catch (error) { console.error(`Lỗi tải ${file}:`, error); }
 }
 
-function initApp(user) {
-    loadComponent("layout-sidebar", "components/sidebar.html");
-    loadComponent("layout-footer", "components/footer.html");
-    loadComponent("layout-header", "components/header.html").then(() => {
-        const userDisplay = document.getElementById('userEmailDisplay');
-        if (userDisplay) userDisplay.textContent = user.email;
+async function initApp(user) {
+    // 1. Tải xong toàn bộ khung xương trước khi làm việc khác
+    await Promise.all([
+        loadComponent("layout-sidebar", "components/sidebar.html"),
+        loadComponent("layout-header", "components/header.html"),
+        loadComponent("layout-footer", "components/footer.html")
+    ]);
 
-        const btnLogout = document.getElementById('btnLogout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async () => {
-                await signOut(auth);
-                window.location.replace('login.html');
-            });
+    // 2. Gắn thông tin hiển thị cơ bản
+    const userDisplay = document.getElementById('userEmailDisplay');
+    if (userDisplay) userDisplay.textContent = user.email;
+
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.replace('login.html');
+        });
+    }
+
+    // 3. KIỂM TRA QUYỀN ADMIN TỪ FIREBASE ĐỂ MỞ KHÓA MENU
+    const safeEmail = user.email.replace(/\./g, '_');
+    try {
+        const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
+        const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
+        
+        // Nếu là Admin, gỡ bỏ class 'hidden' của nút Menu
+        if (userRole === 'Admin') {
+            const adminMenu = document.getElementById('menuAdminUsers');
+            if (adminMenu) adminMenu.classList.remove('hidden');
         }
-    });
+    } catch (err) {
+        console.error("Lỗi kiểm tra quyền: ", err);
+    }
     
-    // Mặc định load màn hình Kanban
+    // 4. Mặc định load màn hình Kanban
     loadView('views/kanban.html');
 }
 
@@ -45,7 +68,7 @@ window.loadView = async function(viewFile) {
     
     await loadComponent("layout-content", viewFile);
     
-    // KÍCH HOẠT LOGIC RIÊNG CHO TỪNG MÀN HÌNH
+    // Kích hoạt logic riêng cho từng màn hình
     if (viewFile === 'views/admin-users.html') {
         loadAdminUsers();
     }
@@ -56,6 +79,8 @@ window.loadView = async function(viewFile) {
 // ==========================================
 window.loadAdminUsers = async function() {
     const tbody = document.getElementById('userTableBody');
+    if (!tbody) return;
+
     try {
         const snapshot = await get(child(ref(db), `AccessControl`));
         if (snapshot.exists()) {
@@ -103,12 +128,12 @@ window.toggleUserStatus = async function(safeEmail, currentStatus) {
     if(!confirm('Bạn có chắc chắn muốn thay đổi trạng thái đăng nhập của tài khoản này?')) return;
     const newStatus = currentStatus === 'Active' ? 'Locked' : 'Active';
     await update(ref(db, `AccessControl/${safeEmail}`), { TrangThai: newStatus });
-    loadAdminUsers(); // Tải lại bảng
+    loadAdminUsers();
 };
 
 window.toggleUserRole = async function(safeEmail, currentRole) {
     if(!confirm('Bạn có chắc chắn muốn thay đổi quyền hạn của tài khoản này?')) return;
     const newRole = currentRole === 'Admin' ? 'NhanVien' : 'Admin';
     await update(ref(db, `AccessControl/${safeEmail}`), { Role: newRole });
-    loadAdminUsers(); // Tải lại bảng
+    loadAdminUsers();
 };
