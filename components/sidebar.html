@@ -1,28 +1,25 @@
-<!-- Phiên bản: 1.11 -->
 <aside class="w-64 bg-slate-800 text-white shadow-xl h-full flex flex-col transition-all duration-300">
     <div class="h-16 flex items-center justify-center border-b border-slate-700 bg-slate-900 shadow-inner">
         <h1 class="text-xl font-bold text-blue-400 tracking-wider"><i class="fa-solid fa-shield-halved mr-2"></i>VDC TEST</h1>
     </div>
     
     <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        <!-- Nhóm Tổng quan -->
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-3 mb-2 mt-2">Bảng điều khiển</p>
         <a href="#" onclick="loadView('views/dashboard.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group">
             <i class="fa-solid fa-chart-pie w-5 group-hover:text-blue-400 transition-colors"></i> Tổng quan
         </a>
 
-        <!-- Nhóm Quy trình -->
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-3 mb-2 mt-6">Quản lý luồng (B1-B6)</p>
         <a href="#" onclick="loadView('views/kanban.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md">
             <i class="fa-solid fa-bars-progress w-5"></i> Bảng kéo thả Kanban
         </a>
 
-        <!-- Nhóm Quản trị hệ thống -->
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-3 mb-2 mt-6">Hệ thống</p>
         <a href="#" onclick="loadView('views/table.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group">
             <i class="fa-solid fa-building w-5 group-hover:text-blue-400 transition-colors"></i> Dữ liệu Công ty
         </a>
-        <a href="#" onclick="loadView('views/admin-users.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group border border-slate-600 mt-2 bg-slate-900/50">
+        
+        <a href="#" id="menuAdminUsers" onclick="loadView('views/admin-users.html')" class="hidden flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group border border-slate-600 mt-2 bg-slate-900/50">
             <i class="fa-solid fa-users-gear w-5 group-hover:text-amber-400 text-amber-500 transition-colors"></i> Quản lý Tài khoản
         </a>
     </nav>
