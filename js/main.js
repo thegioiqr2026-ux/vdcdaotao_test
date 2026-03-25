@@ -139,3 +139,135 @@ window.toggleUserRole = async function(safeEmail, currentRole) {
     await update(ref(db, `AccessControl/${safeEmail}`), { Role: newRole });
     loadAdminUsers();
 };
+// ==========================================
+// LOGIC MÀN HÌNH KANBAN (KÉO THẢ & FIREBASE)
+// ==========================================
+
+window.loadKanbanData = async function() {
+    const cols = ['B1_BaoGia', 'B4_ChuanBi', 'B5_DangDay', 'B6_ChoInPhoi', 'B7_HoanTat'];
+    
+    // Reset rỗng các cột trước khi nạp dữ liệu
+    cols.forEach(c => {
+        const el = document.getElementById('col_' + c);
+        if(el) el.innerHTML = '';
+    });
+
+    try {
+        const snapshot = await get(ref(db, 'KhachHang'));
+        if (snapshot.exists()) {
+            snapshot.forEach(khSnap => {
+                const mst = khSnap.key;
+                const khData = khSnap.val();
+                const tenCongTy = khData.ThongTinGoc?.TenCongTy || "Chưa cập nhật tên";
+                
+                if (khData.CacLopHuanLuyen) {
+                    Object.keys(khData.CacLopHuanLuyen).forEach(lopId => {
+                        const lopData = khData.CacLopHuanLuyen[lopId];
+                        const status = lopData.TrangThai || 'B1_BaoGia';
+                        
+                        // Vẽ Thẻ Công ty (Card HTML)
+                        const cardHTML = `
+                            <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all" 
+                                 draggable="true" 
+                                 ondragstart="dragCard(event, '${mst}', '${lopId}')">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider">${mst}</span>
+                                    <span class="text-[10px] text-gray-400">${lopId}</span>
+                                </div>
+                                <h3 class="font-bold text-gray-800 text-sm mb-1 leading-snug">${tenCongTy}</h3>
+                                <p class="text-[10px] text-gray-500"><i class="fa-regular fa-clock mr-1"></i>Tạo: ${lopData.NgayTao}</p>
+                            </div>
+                        `;
+                        
+                        // Nhét thẻ vào đúng cột
+                        const colEl = document.getElementById('col_' + status);
+                        if(colEl) colEl.innerHTML += cardHTML;
+                    });
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Lỗi tải Kanban:", error);
+    }
+};
+
+// --- CÁC HÀM XỬ LÝ KÉO THẢ (DRAG & DROP) ---
+window.dragCard = function(ev, mst, lopId) {
+    ev.dataTransfer.setData("mst", mst);
+    ev.dataTransfer.setData("lopId", lopId);
+};
+
+window.allowDrop = function(ev) {
+    ev.preventDefault(); // Cho phép thả vào vùng này
+};
+
+window.dropCard = async function(ev, newStatus) {
+    ev.preventDefault();
+    const mst = ev.dataTransfer.getData("mst");
+    const lopId = ev.dataTransfer.getData("lopId");
+    
+    if(!mst || !lopId) return;
+
+    try {
+        // Cập nhật trạng thái mới lên Firebase
+        await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}`), { 
+            TrangThai: newStatus 
+        });
+        // Tải lại bảng để thấy sự thay đổi
+        loadKanbanData();
+    } catch(err) {
+        alert("Lỗi khi chuyển trạng thái: " + err.message);
+    }
+};
+
+// --- HÀM XỬ LÝ TẠO LỚP MỚI ---
+window.submitNewClass = async function(ev) {
+    ev.preventDefault();
+    const btn = document.getElementById('btnSubmitCreate');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    const mst = document.getElementById('newMST').value.trim();
+    const ten = document.getElementById('newTenCTY').value.trim();
+    const lop = document.getElementById('newLop').value.trim();
+    
+    const today = new Date();
+    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth()+1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+
+    try {
+        // Ghi Thông tin gốc công ty
+        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten });
+        // Ghi thông tin Lớp vào trạng thái B1_BaoGia
+        await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
+            TrangThai: "B1_BaoGia",
+            NgayTao: dateStr
+        });
+        
+        document.getElementById('modalCreate').classList.add('hidden');
+        document.getElementById('formCreateClass').reset();
+        loadKanbanData();
+    } catch(err) {
+        alert("Lỗi: " + err.message);
+    }
+    btn.innerHTML = 'Tạo mới';
+    btn.disabled = false;
+};
+
+// Gắn bộ lắng nghe sự kiện khi load Kanban
+window.setupKanbanEvents = function() {
+    setTimeout(() => {
+        loadKanbanData();
+        const form = document.getElementById('formCreateClass');
+        if(form) form.addEventListener('submit', submitNewClass);
+    }, 200);
+};
+
+// SỬA LẠI HÀM loadView ĐỂ KÍCH HOẠT KANBAN:
+// (Anh tìm hàm loadView cũ trong main.js và bổ sung đoạn if Kanban này vào)
+const originalLoadView = window.loadView;
+window.loadView = async function(viewFile) {
+    await originalLoadView(viewFile);
+    if (viewFile === 'views/kanban.html') {
+        setupKanbanEvents();
+    }
+};
