@@ -1,0 +1,217 @@
+<!-- Phiên bản: 1.6 -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực - VDC SYSTEM (TEST)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hidden-form { display: none; }
+    </style>
+</head>
+<body class="bg-slate-900 h-screen flex items-center justify-center relative overflow-hidden">
+    <!-- Hiệu ứng nền -->
+    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md z-10">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-blue-700 tracking-wider"><i class="fa-solid fa-shield-halved"></i> VDC CRM</h1>
+            <p id="formTitle" class="text-gray-500 text-sm mt-2 font-medium">Đăng nhập hệ thống (Môi trường Test)</p>
+        </div>
+
+        <div id="alertBox" class="hidden mb-4 p-3 rounded text-sm font-bold text-center"></div>
+
+        <!-- 1. FORM ĐĂNG NHẬP -->
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Email nội bộ</label>
+                <input type="email" id="loginEmail" required class="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                <input type="password" id="loginPass" required class="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <a href="#" onclick="switchForm('forgotForm', 'Khôi phục mật khẩu')" class="text-blue-600 hover:underline font-medium">Quên mật khẩu?</a>
+            </div>
+            <button type="submit" id="btnLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-all">
+                ĐĂNG NHẬP
+            </button>
+            <p class="text-center text-sm text-gray-600 mt-4">Chưa có tài khoản? <a href="#" onclick="switchForm('registerForm', 'Đăng ký tài khoản mới')" class="text-blue-600 font-bold hover:underline">Đăng ký ngay</a></p>
+        </form>
+
+        <!-- 2. FORM ĐĂNG KÝ -->
+        <form id="registerForm" class="space-y-4 hidden-form">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Họ và Tên</label>
+                <input type="text" id="regName" required class="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Email hệ thống</label>
+                <input type="email" id="regEmail" required class="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Mật khẩu (từ 6 ký tự)</label>
+                <input type="password" id="regPass" required minlength="6" class="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div id="otpSection" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 text-blue-600">Nhập mã OTP (Đã gửi vào Email)</label>
+                <input type="text" id="regOTP" maxlength="6" class="mt-1 w-full px-4 py-2 text-center tracking-widest text-lg font-bold bg-blue-50 border border-blue-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <button type="button" id="btnGetRegOTP" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-lg transition-all">
+                GỬI MÃ OTP ĐỂ ĐĂNG KÝ
+            </button>
+            
+            <button type="submit" id="btnRegister" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-lg transition-all hidden">
+                HOÀN TẤT TẠO TÀI KHOẢN
+            </button>
+
+            <p class="text-center text-sm mt-4"><a href="#" onclick="switchForm('loginForm', 'Đăng nhập hệ thống')" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-arrow-left"></i> Quay lại đăng nhập</a></p>
+        </form>
+
+        <!-- 3. FORM QUÊN MẬT KHẨU -->
+        <form id="forgotForm" class="space-y-4 hidden-form">
+            <p class="text-sm text-gray-600 mb-2">Nhập email của anh/chị, hệ thống sẽ gửi liên kết khôi phục mật khẩu bảo mật.</p>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Email cần khôi phục</label>
+                <input type="email" id="forgotEmail" required class="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button type="submit" id="btnResetPass" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition-all">
+                GỬI LIÊN KẾT KHÔI PHỤC
+            </button>
+            <p class="text-center text-sm mt-4"><a href="#" onclick="switchForm('loginForm', 'Đăng nhập hệ thống')" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-arrow-left"></i> Quay lại đăng nhập</a></p>
+        </form>
+
+    </div>
+
+    <!-- TÍCH HỢP LOGIC BẢO MẬT -->
+    <script type="module">
+        import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, ref, set } from './js/firebase-config.js';
+
+        // ==========================================
+        // DÁN LINK GOOGLE APPS SCRIPT CỦA ANH VÀO ĐÂY ĐỂ CHẠY OTP VÀ TELEGRAM
+        // ==========================================
+        const GAS_URL = "URL_APPS_SCRIPT_CUA_ANH"; 
+        
+        let currentOTP = ""; 
+        const alertBox = document.getElementById('alertBox');
+        
+        function showAlert(msg, isError = true) {
+            alertBox.textContent = msg;
+            alertBox.className = `mb-4 p-3 rounded text-sm font-bold text-center ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            alertBox.classList.remove('hidden');
+        }
+
+        window.switchForm = function(formId, title) {
+            document.querySelectorAll('form').forEach(f => f.classList.add('hidden-form'));
+            document.getElementById(formId).classList.remove('hidden-form');
+            document.getElementById('formTitle').textContent = title;
+            alertBox.classList.add('hidden');
+            
+            document.getElementById('otpSection').classList.add('hidden');
+            document.getElementById('btnRegister').classList.add('hidden');
+            document.getElementById('btnGetRegOTP').classList.remove('hidden');
+            currentOTP = "";
+        };
+
+        // Xử lý Đăng nhập
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnLogin');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải...';
+            try {
+                await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPass').value);
+                window.location.href = 'index.html'; // Đăng nhập đúng, chuyển vào Dashboard
+            } catch (error) {
+                showAlert("Sai email hoặc mật khẩu!");
+                btn.innerHTML = 'ĐĂNG NHẬP';
+            }
+        });
+
+        // Xử lý Lấy OTP
+        document.getElementById('btnGetRegOTP').addEventListener('click', async () => {
+            const email = document.getElementById('regEmail').value;
+            const name = document.getElementById('regName').value;
+            const pass = document.getElementById('regPass').value;
+            
+            if(!email || !name || pass.length < 6) return showAlert("Vui lòng nhập đủ Tên, Email và Mật khẩu (từ 6 ký tự)!");
+            
+            const btn = document.getElementById('btnGetRegOTP');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi OTP...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ type: "send_otp", email: email })
+                });
+                currentOTP = await response.text();
+                showAlert(`Đã gửi OTP đến ${email}. Vui lòng kiểm tra hộp thư.`, false);
+                document.getElementById('otpSection').classList.remove('hidden');
+                document.getElementById('btnRegister').classList.remove('hidden');
+                btn.classList.add('hidden'); 
+            } catch (error) {
+                showAlert("Lỗi kết nối đến máy chủ Gửi Mail. Hãy kiểm tra lại link GAS.");
+                btn.innerHTML = 'GỬI MÃ OTP ĐỂ ĐĂNG KÝ';
+                btn.disabled = false;
+            }
+        });
+
+        // Xử lý Đăng ký
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const inputOTP = document.getElementById('regOTP').value;
+            const email = document.getElementById('regEmail').value;
+            const name = document.getElementById('regName').value;
+            const pass = document.getElementById('regPass').value;
+
+            if (inputOTP !== currentOTP) return showAlert("Mã OTP không chính xác!");
+
+            const btn = document.getElementById('btnRegister');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...';
+            
+            try {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                const safeEmail = email.replace(/\./g, '_');
+                await set(ref(db, 'AccessControl/' + safeEmail), {
+                    HoTen: name,
+                    Email: email,
+                    Role: "NhanVien",
+                    TrangThai: "Active"
+                });
+
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ type: "admin_notif", email: email, name: name })
+                });
+
+                showAlert("Đăng ký thành công! Đang vào hệ thống...", false);
+                setTimeout(() => window.location.href = 'index.html', 1500);
+            } catch (error) {
+                showAlert("Lỗi: Email đã tồn tại hoặc định dạng không hợp lệ.");
+                btn.innerHTML = 'HOÀN TẤT TẠO TÀI KHOẢN';
+            }
+        });
+
+        // Xử lý Quên mật khẩu
+        document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmail').value;
+            const btn = document.getElementById('btnResetPass');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showAlert("Đã gửi liên kết khôi phục. Vui lòng kiểm tra email của anh/chị!", false);
+            } catch (error) {
+                showAlert("Email không tồn tại trong hệ thống.");
+            }
+            btn.innerHTML = 'GỬI LIÊN KẾT KHÔI PHỤC';
+        });
+    </script>
+</body>
+</html>
