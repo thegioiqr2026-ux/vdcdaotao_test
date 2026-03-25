@@ -165,16 +165,24 @@ window.loadKanbanData = async function() {
                         const lopData = khData.CacLopHuanLuyen[lopId];
                         const status = lopData.TrangThai || 'B1_BaoGia';
                         
+                        // LẤY NỘI DUNG HUẤN LUYỆN (Nếu không có thì để trống)
+                        const noiDung = lopData.NoiDungHuanLuyen || '';
+                        const hienThiNoiDung = noiDung ? `<p class="text-[11px] text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100 mb-2 leading-tight italic line-clamp-2" title="${noiDung}">${noiDung}</p>` : '';
+
+                        // Vẽ Thẻ Công ty (Có thêm Nội dung)
                         const cardHTML = `
-                            <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all" 
+                            <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all group" 
                                  draggable="true" 
                                  ondragstart="dragCard(event, '${mst}', '${lopId}')">
                                 <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider">${mst}</span>
-                                    <span class="text-[10px] text-gray-400 font-medium">${lopId}</span>
+                                    <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">${mst}</span>
+                                    <span class="text-[10px] text-gray-400 font-medium group-hover:text-blue-500 transition-colors">${lopId}</span>
                                 </div>
-                                <h3 class="font-bold text-gray-800 text-sm mb-1 leading-snug">${tenCongTy}</h3>
-                                <p class="text-[10px] text-gray-500"><i class="fa-regular fa-clock mr-1"></i>Tạo: ${lopData.NgayTao || 'N/A'}</p>
+                                <h3 class="font-bold text-gray-800 text-sm mb-2 leading-snug">${tenCongTy}</h3>
+                                
+                                ${hienThiNoiDung}
+                                
+                                <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><i class="fa-regular fa-calendar"></i> ${lopData.NgayTao || 'N/A'}</p>
                             </div>
                         `;
                         
@@ -217,7 +225,6 @@ window.dropCard = async function(ev, newStatus) {
     }
 };
 
-// --- HÀM MỚI: TỰ ĐỘNG ĐIỀN TÊN CÔNG TY VÀ SINH MÃ LỚP ---
 window.autoFillData = async function() {
     const mstInput = document.getElementById('newMST');
     const tenInput = document.getElementById('newTenCTY');
@@ -230,13 +237,11 @@ window.autoFillData = async function() {
     let nextStt = 1;
 
     try {
-        // 1. Tìm xem Công ty này đã có Tên chưa, nếu có thì tự điền
         const snapTen = await get(child(ref(db), `KhachHang/${mst}/ThongTinGoc/TenCongTy`));
         if (snapTen.exists() && tenInput.value.trim() === '') {
             tenInput.value = snapTen.val();
         }
 
-        // 2. Đếm số lớp của Công ty này trong Năm nay để tính STT
         const snapLop = await get(child(ref(db), `KhachHang/${mst}/CacLopHuanLuyen`));
         if (snapLop.exists()) {
             const cacLop = snapLop.val();
@@ -255,7 +260,6 @@ window.autoFillData = async function() {
             nextStt = maxStt + 1;
         }
 
-        // 3. Tự động sinh mã vào ô (chỉ sinh khi ô còn trống hoặc đang chứa mã cũ do hệ thống tự sinh)
         if (lopInput.value.trim() === '' || lopInput.value.startsWith(mst)) {
             lopInput.value = `${mst}-${currentYear}-${nextStt}`;
         }
@@ -277,17 +281,24 @@ window.submitNewClass = async function(ev) {
     const ten = document.getElementById('newTenCTY').value.trim();
     const lop = document.getElementById('newLop').value.trim();
     
+    // LẤY DỮ LIỆU TỪ Ô NỘI DUNG MỚI
+    const noidungBox = document.getElementById('newNoiDung');
+    const noidung = noidungBox ? noidungBox.value.trim() : "";
+    
     const today = new Date();
     const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth()+1).toString().padStart(2, '0')}/${today.getFullYear()}`;
 
     try {
         await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { 
             TenCongTy: ten,
-            MST: mst // Bổ sung lưu luôn thuộc tính MST cho chắc chắn
+            MST: mst
         });
+        
+        // BỔ SUNG LƯU NỘI DUNG VÀO FIREBASE
         await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
             TrangThai: "B1_BaoGia",
-            NgayTao: dateStr
+            NgayTao: dateStr,
+            NoiDungHuanLuyen: noidung
         });
         
         document.getElementById('modalCreate').classList.add('hidden');
@@ -304,14 +315,12 @@ window.setupKanbanEvents = function() {
     setTimeout(() => {
         loadKanbanData();
         
-        // Gắn sự kiện cho Form Lên Đơn
         const form = document.getElementById('formCreateClass');
         if(form) {
             form.removeEventListener('submit', submitNewClass);
             form.addEventListener('submit', submitNewClass);
         }
 
-        // Gắn sự kiện kích hoạt tự động sinh mã khi vừa gõ xong MST (Rời chuột khỏi ô nhập)
         const mstInput = document.getElementById('newMST');
         if(mstInput) {
             mstInput.removeEventListener('blur', autoFillData);
