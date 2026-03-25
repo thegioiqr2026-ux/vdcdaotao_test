@@ -1,4 +1,4 @@
-// Phiên bản: 1.13
+// Phiên bản: 1.16
 // File Logic điều phối trung tâm của Dashboard (TEST)
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update } from './firebase-config.js';
@@ -46,14 +46,12 @@ async function initApp(user) {
         const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
         const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
         
-        // SỬA LỖI HIỂN THỊ NÚT ADMIN TẠI ĐÂY
         const adminMenu = document.getElementById('menuAdminUsers');
         if (adminMenu) {
             if (userRole === 'Admin') {
                 adminMenu.classList.remove('hidden');
-                adminMenu.classList.add('flex'); // Bơm lại flex khi là Admin
+                adminMenu.classList.add('flex');
             } else {
-                // Đảm bảo ẩn tuyệt đối nếu là nhân viên
                 adminMenu.classList.add('hidden');
                 adminMenu.classList.remove('flex');
             }
@@ -65,14 +63,18 @@ async function initApp(user) {
     loadView('views/kanban.html');
 }
 
+// GỘP CHUNG LOGIC ĐIỀU HƯỚNG VÀO ĐÂY
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
     contentDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-blue-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-3"></i><span class="font-medium text-gray-500">Đang tải giao diện...</span></div>`;
     
     await loadComponent("layout-content", viewFile);
     
+    // Kiểm tra xem vừa tải màn hình nào để gọi logic tương ứng
     if (viewFile === 'views/admin-users.html') {
         loadAdminUsers();
+    } else if (viewFile === 'views/kanban.html') {
+        setupKanbanEvents();
     }
 };
 
@@ -139,6 +141,8 @@ window.toggleUserRole = async function(safeEmail, currentRole) {
     await update(ref(db, `AccessControl/${safeEmail}`), { Role: newRole });
     loadAdminUsers();
 };
+
+
 // ==========================================
 // LOGIC MÀN HÌNH KANBAN (KÉO THẢ & FIREBASE)
 // ==========================================
@@ -172,16 +176,18 @@ window.loadKanbanData = async function() {
                                  ondragstart="dragCard(event, '${mst}', '${lopId}')">
                                 <div class="flex justify-between items-start mb-2">
                                     <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider">${mst}</span>
-                                    <span class="text-[10px] text-gray-400">${lopId}</span>
+                                    <span class="text-[10px] text-gray-400 font-medium">${lopId}</span>
                                 </div>
                                 <h3 class="font-bold text-gray-800 text-sm mb-1 leading-snug">${tenCongTy}</h3>
-                                <p class="text-[10px] text-gray-500"><i class="fa-regular fa-clock mr-1"></i>Tạo: ${lopData.NgayTao}</p>
+                                <p class="text-[10px] text-gray-500"><i class="fa-regular fa-clock mr-1"></i>Tạo: ${lopData.NgayTao || 'N/A'}</p>
                             </div>
                         `;
                         
                         // Nhét thẻ vào đúng cột
                         const colEl = document.getElementById('col_' + status);
-                        if(colEl) colEl.innerHTML += cardHTML;
+                        if(colEl) {
+                            colEl.insertAdjacentHTML('beforeend', cardHTML);
+                        }
                     });
                 }
             });
@@ -191,14 +197,13 @@ window.loadKanbanData = async function() {
     }
 };
 
-// --- CÁC HÀM XỬ LÝ KÉO THẢ (DRAG & DROP) ---
 window.dragCard = function(ev, mst, lopId) {
     ev.dataTransfer.setData("mst", mst);
     ev.dataTransfer.setData("lopId", lopId);
 };
 
 window.allowDrop = function(ev) {
-    ev.preventDefault(); // Cho phép thả vào vùng này
+    ev.preventDefault();
 };
 
 window.dropCard = async function(ev, newStatus) {
@@ -209,21 +214,20 @@ window.dropCard = async function(ev, newStatus) {
     if(!mst || !lopId) return;
 
     try {
-        // Cập nhật trạng thái mới lên Firebase
         await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}`), { 
             TrangThai: newStatus 
         });
-        // Tải lại bảng để thấy sự thay đổi
         loadKanbanData();
     } catch(err) {
         alert("Lỗi khi chuyển trạng thái: " + err.message);
     }
 };
 
-// --- HÀM XỬ LÝ TẠO LỚP MỚI ---
 window.submitNewClass = async function(ev) {
     ev.preventDefault();
     const btn = document.getElementById('btnSubmitCreate');
+    if(!btn) return;
+
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     btn.disabled = true;
 
@@ -235,9 +239,7 @@ window.submitNewClass = async function(ev) {
     const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth()+1).toString().padStart(2, '0')}/${today.getFullYear()}`;
 
     try {
-        // Ghi Thông tin gốc công ty
         await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten });
-        // Ghi thông tin Lớp vào trạng thái B1_BaoGia
         await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
             TrangThai: "B1_BaoGia",
             NgayTao: dateStr
@@ -253,21 +255,13 @@ window.submitNewClass = async function(ev) {
     btn.disabled = false;
 };
 
-// Gắn bộ lắng nghe sự kiện khi load Kanban
 window.setupKanbanEvents = function() {
     setTimeout(() => {
         loadKanbanData();
         const form = document.getElementById('formCreateClass');
-        if(form) form.addEventListener('submit', submitNewClass);
+        if(form) {
+            form.removeEventListener('submit', submitNewClass);
+            form.addEventListener('submit', submitNewClass);
+        }
     }, 200);
-};
-
-// SỬA LẠI HÀM loadView ĐỂ KÍCH HOẠT KANBAN:
-// (Anh tìm hàm loadView cũ trong main.js và bổ sung đoạn if Kanban này vào)
-const originalLoadView = window.loadView;
-window.loadView = async function(viewFile) {
-    await originalLoadView(viewFile);
-    if (viewFile === 'views/kanban.html') {
-        setupKanbanEvents();
-    }
 };
