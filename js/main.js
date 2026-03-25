@@ -1,28 +1,19 @@
-// Phiên bản: 1.20
-// Chức năng: Phân quyền, Kanban, Tra cứu MST (Chuẩn hóa số 0) & Tự động sinh Mã lớp
+// Phiên bản: 1.21
+// Chức năng: Kanban, Tra cứu MST (Tên + Địa chỉ), Chuẩn hóa MST & Tự động sinh Mã lớp
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update } from './firebase-config.js';
 
-// LINK WEB APP GAS CỦA ANH
 const GAS_URL_SYSTEM = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
 
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        window.location.replace('login.html'); 
-    } else {
-        document.getElementById('appBody').classList.remove('hidden'); 
-        initApp(user);
-    }
+    if (!user) { window.location.replace('login.html'); } 
+    else { document.getElementById('appBody').classList.remove('hidden'); initApp(user); }
 });
 
 async function loadComponent(id, file) {
     try {
         const response = await fetch(file);
-        if (response.ok) {
-            document.getElementById(id).innerHTML = await response.text();
-        } else {
-            console.error(`Lỗi tải file: ${file}`);
-        }
+        if (response.ok) document.getElementById(id).innerHTML = await response.text();
     } catch (error) { console.error(`Lỗi tải ${file}:`, error); }
 }
 
@@ -32,242 +23,157 @@ async function initApp(user) {
         loadComponent("layout-header", "components/header.html"),
         loadComponent("layout-footer", "components/footer.html")
     ]);
-
     const userDisplay = document.getElementById('userEmailDisplay');
     if (userDisplay) userDisplay.textContent = user.email;
-
     const btnLogout = document.getElementById('btnLogout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
-            await signOut(auth);
-            window.location.replace('login.html');
-        });
-    }
-
-    const safeEmail = user.email.replace(/\./g, '_');
-    try {
-        const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
-        const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
-        
-        const adminMenu = document.getElementById('menuAdminUsers');
-        if (adminMenu) {
-            if (userRole === 'Admin') {
-                adminMenu.classList.remove('hidden');
-                adminMenu.classList.add('flex');
-            } else {
-                adminMenu.classList.add('hidden');
-                adminMenu.classList.remove('flex');
-            }
-        }
-    } catch (err) { console.error("Lỗi kiểm tra quyền:", err); }
+    if (btnLogout) btnLogout.addEventListener('click', async () => { await signOut(auth); window.location.replace('login.html'); });
     
+    const safeEmail = user.email.replace(/\./g, '_');
+    const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
+    const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
+    const adminMenu = document.getElementById('menuAdminUsers');
+    if (adminMenu) {
+        if (userRole === 'Admin') { adminMenu.classList.remove('hidden'); adminMenu.classList.add('flex'); }
+        else { adminMenu.classList.add('hidden'); adminMenu.classList.remove('flex'); }
+    }
     loadView('views/kanban.html');
 }
 
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
-    contentDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-blue-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-3"></i><span class="font-medium text-gray-500">Đang tải giao diện...</span></div>`;
-    
+    contentDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-blue-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-3"></i></div>`;
     await loadComponent("layout-content", viewFile);
-    
-    if (viewFile === 'views/admin-users.html') {
-        loadAdminUsers();
-    } else if (viewFile === 'views/kanban.html') {
-        setupKanbanEvents();
-    }
+    if (viewFile === 'views/kanban.html') setupKanbanEvents();
+    if (viewFile === 'views/admin-users.html') loadAdminUsers();
 };
 
-// ==========================================
-// LOGIC KANBAN & TRA CỨU THÔNG MINH
-// ==========================================
-
+// --- LOGIC KANBAN ---
 window.loadKanbanData = async function() {
     const cols = ['B1_BaoGia', 'B4_ChuanBi', 'B5_DangDay', 'B6_ChoInPhoi', 'B7_HoanTat'];
     cols.forEach(c => { const el = document.getElementById('col_' + c); if(el) el.innerHTML = ''; });
-
-    try {
-        const snapshot = await get(ref(db, 'KhachHang'));
-        if (snapshot.exists()) {
-            snapshot.forEach(khSnap => {
-                const mst = khSnap.key;
-                const khData = khSnap.val();
-                const tenCongTy = khData.ThongTinGoc?.TenCongTy || "Chưa cập nhật tên";
-                
-                if (khData.CacLopHuanLuyen) {
-                    Object.keys(khData.CacLopHuanLuyen).forEach(lopId => {
-                        const lopData = khData.CacLopHuanLuyen[lopId];
-                        const status = lopData.TrangThai || 'B1_BaoGia';
-                        const noiDung = lopData.NoiDungHuanLuyen || '';
-                        const hienThiNoiDung = noiDung ? `<p class="text-[11px] text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100 mb-2 leading-tight italic line-clamp-2" title="${noiDung}">${noiDung}</p>` : '';
-
-                        const cardHTML = `
-                            <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all group" 
-                                 draggable="true" ondragstart="dragCard(event, '${mst}', '${lopId}')">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">${mst}</span>
-                                    <span class="text-[10px] text-gray-400 font-medium group-hover:text-blue-500 transition-colors">${lopId}</span>
-                                </div>
-                                <h3 class="font-bold text-gray-800 text-sm mb-2 leading-snug">${tenCongTy}</h3>
-                                ${hienThiNoiDung}
-                                <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><i class="fa-regular fa-calendar"></i> ${lopData.NgayTao || 'N/A'}</p>
+    const snapshot = await get(ref(db, 'KhachHang'));
+    if (snapshot.exists()) {
+        snapshot.forEach(khSnap => {
+            const mst = khSnap.key;
+            const khData = khSnap.val();
+            if (khData.CacLopHuanLuyen) {
+                Object.keys(khData.CacLopHuanLuyen).forEach(lopId => {
+                    const lopData = khData.CacLopHuanLuyen[lopId];
+                    const status = lopData.TrangThai || 'B1_BaoGia';
+                    const cardHTML = `
+                        <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group" 
+                             draggable="true" ondragstart="dragCard(event, '${mst}', '${lopId}')">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">${mst}</span>
+                                <span class="text-[9px] text-gray-400">${lopId}</span>
                             </div>
-                        `;
-                        const colEl = document.getElementById('col_' + status);
-                        if(colEl) colEl.insertAdjacentHTML('beforeend', cardHTML);
-                    });
-                }
-            });
-        }
-    } catch (error) { console.error("Lỗi tải Kanban:", error); }
+                            <h3 class="font-bold text-gray-800 text-xs mb-1">${khData.ThongTinGoc?.TenCongTy || "N/A"}</h3>
+                            <p class="text-[10px] text-gray-500 line-clamp-1 mb-2 italic"><i class="fa-solid fa-location-dot mr-1"></i>${khData.ThongTinGoc?.DiaChi || "Chưa có địa chỉ"}</p>
+                            <p class="text-[10px] text-slate-500 bg-slate-50 p-1 rounded border border-slate-100 line-clamp-2 mb-2">${lopData.NoiDungHuanLuyen || ''}</p>
+                            <p class="text-[9px] text-gray-400"><i class="fa-regular fa-calendar mr-1"></i>${lopData.NgayTao || 'N/A'}</p>
+                        </div>`;
+                    const colEl = document.getElementById('col_' + status);
+                    if(colEl) colEl.insertAdjacentHTML('beforeend', cardHTML);
+                });
+            }
+        });
+    }
 };
 
 window.dragCard = (ev, mst, lopId) => { ev.dataTransfer.setData("mst", mst); ev.dataTransfer.setData("lopId", lopId); };
 window.allowDrop = (ev) => ev.preventDefault();
-
 window.dropCard = async (ev, newStatus) => {
     ev.preventDefault();
     const mst = ev.dataTransfer.getData("mst");
     const lopId = ev.dataTransfer.getData("lopId");
-    if(!mst || !lopId) return;
-    try {
+    if(mst && lopId) {
         await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}`), { TrangThai: newStatus });
         loadKanbanData();
-    } catch(err) { alert("Lỗi khi chuyển trạng thái: " + err.message); }
+    }
 };
 
-// --- HÀM TRA CỨU & CHUẨN HÓA MST ---
+// --- TRA CỨU MST THÔNG MINH (BẢN V1.21) ---
 window.autoFillData = async function() {
     const mstInput = document.getElementById('newMST');
     const tenInput = document.getElementById('newTenCTY');
+    const diaChiInput = document.getElementById('newDiaChi');
     const lopInput = document.getElementById('newLop');
     
     let mst = mstInput.value.trim();
     if (!mst) return;
-
-    // CHUẨN HÓA: Nếu gõ 9 số và không có số 0 ở đầu -> Tự bù số 0
-    if (mst.length === 9 && !mst.startsWith('0')) {
-        mst = '0' + mst;
-        mstInput.value = mst; // Cập nhật lại UI
-    }
-
-    const currentYear = new Date().getFullYear().toString();
-    let nextStt = 1;
+    if (mst.length === 9 && !mst.startsWith('0')) { mst = '0' + mst; mstInput.value = mst; }
 
     try {
-        // 1. Kiểm tra Firebase trước
-        const snapTen = await get(child(ref(db), `KhachHang/${mst}/ThongTinGoc/TenCongTy`));
-        let foundName = "";
+        const snap = await get(child(ref(db), `KhachHang/${mst}/ThongTinGoc`));
+        let foundName = "", foundAddr = "";
 
-        if (snapTen.exists()) {
-            foundName = snapTen.val();
+        if (snap.exists()) {
+            const data = snap.val();
+            foundName = data.TenCongTy;
+            foundAddr = data.DiaChi || "";
         } else {
-            // 2. Nếu không có, gọi GAS tra cứu
-            tenInput.placeholder = "Đang tra cứu dữ liệu...";
-            tenInput.disabled = true;
-            try {
-                const res = await fetch(GAS_URL_SYSTEM, {
-                    method: 'POST',
-                    body: JSON.stringify({ type: "lookup_mst", mst: mst })
-                });
-                const result = await res.json();
-                if (result.success) foundName = result.tenCongTy;
-            } catch (e) { console.error("Lỗi API GAS:", e); }
-            tenInput.disabled = false;
-            tenInput.placeholder = "";
+            tenInput.placeholder = "Đang tra cứu tên...";
+            diaChiInput.placeholder = "Đang tra cứu địa chỉ...";
+            const res = await fetch(GAS_URL_SYSTEM, { method: 'POST', body: JSON.stringify({ type: "lookup_mst", mst: mst }) });
+            const result = await res.json();
+            if (result.success) {
+                foundName = result.tenCongTy;
+                foundAddr = result.diaChi;
+            }
+            tenInput.placeholder = ""; diaChiInput.placeholder = "";
         }
 
-        if (foundName && tenInput.value.trim() === '') tenInput.value = foundName;
+        if (foundName && !tenInput.value.trim()) tenInput.value = foundName;
+        if (foundAddr && !diaChiInput.value.trim()) diaChiInput.value = foundAddr;
 
-        // 3. Sinh mã lớp (Dựa trên MST đã chuẩn hóa)
+        // Sinh mã lớp
+        const year = new Date().getFullYear();
         const snapLop = await get(child(ref(db), `KhachHang/${mst}/CacLopHuanLuyen`));
+        let nextStt = 1;
         if (snapLop.exists()) {
-            const cacLop = snapLop.val();
-            const prefix = `${mst}-${currentYear}-`;
-            let maxStt = 0;
-            Object.keys(cacLop).forEach(key => {
-                if (key.startsWith(prefix)) {
-                    const stt = parseInt(key.split('-').pop());
-                    if (!isNaN(stt) && stt > maxStt) maxStt = stt;
-                }
-            });
-            nextStt = maxStt + 1;
+            const keys = Object.keys(snapLop.val());
+            const prefix = `${mst}-${year}-`;
+            const stts = keys.filter(k => k.startsWith(prefix)).map(k => parseInt(k.split('-').pop()));
+            if (stts.length > 0) nextStt = Math.max(...stts) + 1;
         }
-        
-        // Chỉ cập nhật mã lớp nếu ô đang trống hoặc đang chứa mã cũ của chính MST này
-        if (lopInput.value.trim() === '' || lopInput.value.includes(mst.substring(1))) {
-            lopInput.value = `${mst}-${currentYear}-${nextStt}`;
+        if (!lopInput.value.trim() || lopInput.value.includes(mst.substring(1))) {
+            lopInput.value = `${mst}-${year}-${nextStt}`;
         }
-    } catch (err) { console.error("Lỗi autoFill:", err); }
+    } catch (e) { console.error(e); }
 };
 
 window.submitNewClass = async function(ev) {
     ev.preventDefault();
     const btn = document.getElementById('btnSubmitCreate');
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
 
     const mst = document.getElementById('newMST').value.trim();
     const ten = document.getElementById('newTenCTY').value.trim();
+    const diachi = document.getElementById('newDiaChi').value.trim();
     const lop = document.getElementById('newLop').value.trim();
     const noidung = document.getElementById('newNoiDung')?.value.trim() || "";
     const dateStr = new Date().toLocaleDateString('vi-VN');
 
     try {
-        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten, MST: mst });
+        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten, DiaChi: diachi, MST: mst });
         await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
             TrangThai: "B1_BaoGia", NgayTao: dateStr, NoiDungHuanLuyen: noidung 
         });
         document.getElementById('modalCreate').classList.add('hidden');
         document.getElementById('formCreateClass').reset();
         loadKanbanData();
-    } catch(err) { alert("Lỗi: " + err.message); }
-    btn.innerHTML = 'Tạo mới';
-    btn.disabled = false;
+    } catch(err) { alert(err.message); }
+    btn.innerHTML = 'Tạo mới'; btn.disabled = false;
 };
 
 window.setupKanbanEvents = function() {
     setTimeout(() => {
         loadKanbanData();
         const form = document.getElementById('formCreateClass');
-        if(form) { form.removeEventListener('submit', submitNewClass); form.addEventListener('submit', submitNewClass); }
-        const mstInput = document.getElementById('newMST');
-        if(mstInput) { mstInput.removeEventListener('blur', autoFillData); mstInput.addEventListener('blur', autoFillData); }
+        if(form) form.addEventListener('submit', submitNewClass);
+        const mstIn = document.getElementById('newMST');
+        if(mstIn) mstIn.addEventListener('blur', autoFillData);
     }, 200);
 };
 
-// --- LOGIC QUẢN LÝ TÀI KHOẢN (ADMIN) ---
-window.loadAdminUsers = async function() {
-    const tbody = document.getElementById('userTableBody');
-    if (!tbody) return;
-    try {
-        const snapshot = await get(child(ref(db), `AccessControl`));
-        if (snapshot.exists()) {
-            let html = '';
-            snapshot.forEach((childSnapshot) => {
-                const safeEmail = childSnapshot.key;
-                const data = childSnapshot.val();
-                const isLocked = data.TrangThai !== 'Active';
-                html += `
-                    <tr class="hover:bg-blue-50/50 transition-colors border-b border-gray-100">
-                        <td class="p-4 font-medium text-gray-800">${data.HoTen || 'Chưa cập nhật'}</td>
-                        <td class="p-4 text-gray-600">${data.Email}</td>
-                        <td class="p-4 text-center">${data.Role === 'Admin' ? '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">Admin</span>' : 'Nhân viên'}</td>
-                        <td class="p-4 text-center">${isLocked ? '<span class="text-red-600 font-bold">Bị khóa</span>' : '<span class="text-green-600 font-bold">Active</span>'}</td>
-                        <td class="p-4 text-center">
-                            <button onclick="toggleUserStatus('${safeEmail}', '${data.TrangThai}')" class="text-xs bg-slate-100 p-1.5 rounded hover:bg-slate-200">
-                                <i class="fa-solid ${isLocked ? 'fa-unlock text-green-600' : 'fa-lock text-red-600'}"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-    } catch (e) { console.error("Lỗi tải Admin:", e); }
-};
-
-window.toggleUserStatus = async function(safeEmail, currentStatus) {
-    if(!confirm('Thay đổi trạng thái tài khoản này?')) return;
-    const newStatus = currentStatus === 'Active' ? 'Locked' : 'Active';
-    await update(ref(db, `AccessControl/${safeEmail}`), { TrangThai: newStatus });
-    loadAdminUsers();
-};
+// --- Hết file main.js ---
