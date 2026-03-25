@@ -1,4 +1,4 @@
-// Phiên bản: 1.12
+// Phiên bản: 1.13
 // File Logic điều phối trung tâm của Dashboard (TEST)
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update } from './firebase-config.js';
@@ -24,14 +24,12 @@ async function loadComponent(id, file) {
 }
 
 async function initApp(user) {
-    // 1. Tải xong toàn bộ khung xương trước khi làm việc khác
     await Promise.all([
         loadComponent("layout-sidebar", "components/sidebar.html"),
         loadComponent("layout-header", "components/header.html"),
         loadComponent("layout-footer", "components/footer.html")
     ]);
 
-    // 2. Gắn thông tin hiển thị cơ bản
     const userDisplay = document.getElementById('userEmailDisplay');
     if (userDisplay) userDisplay.textContent = user.email;
 
@@ -43,22 +41,27 @@ async function initApp(user) {
         });
     }
 
-    // 3. KIỂM TRA QUYỀN ADMIN TỪ FIREBASE ĐỂ MỞ KHÓA MENU
     const safeEmail = user.email.replace(/\./g, '_');
     try {
         const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
         const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
         
-        // Nếu là Admin, gỡ bỏ class 'hidden' của nút Menu
-        if (userRole === 'Admin') {
-            const adminMenu = document.getElementById('menuAdminUsers');
-            if (adminMenu) adminMenu.classList.remove('hidden');
+        // SỬA LỖI HIỂN THỊ NÚT ADMIN TẠI ĐÂY
+        const adminMenu = document.getElementById('menuAdminUsers');
+        if (adminMenu) {
+            if (userRole === 'Admin') {
+                adminMenu.classList.remove('hidden');
+                adminMenu.classList.add('flex'); // Bơm lại flex khi là Admin
+            } else {
+                // Đảm bảo ẩn tuyệt đối nếu là nhân viên
+                adminMenu.classList.add('hidden');
+                adminMenu.classList.remove('flex');
+            }
         }
     } catch (err) {
         console.error("Lỗi kiểm tra quyền: ", err);
     }
     
-    // 4. Mặc định load màn hình Kanban
     loadView('views/kanban.html');
 }
 
@@ -68,7 +71,6 @@ window.loadView = async function(viewFile) {
     
     await loadComponent("layout-content", viewFile);
     
-    // Kích hoạt logic riêng cho từng màn hình
     if (viewFile === 'views/admin-users.html') {
         loadAdminUsers();
     }
