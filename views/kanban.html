@@ -1,3 +1,4 @@
+<!-- Phiên bản: 1.18 -->
 <div class="h-full flex flex-col relative">
     <div class="mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
@@ -10,53 +11,65 @@
     </div>
 
     <div class="flex-1 flex gap-5 overflow-x-auto pb-4 custom-scrollbar select-none" id="kanbanBoard">
-        
+        <!-- B1-B3: Báo Giá -->
         <div class="bg-slate-100/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-slate-200 shadow-sm" ondragover="allowDrop(event)" ondrop="dropCard(event, 'B1_BaoGia')">
             <div class="p-3 font-bold border-b border-slate-200 text-slate-700 bg-slate-200/50 rounded-t-xl"><i class="fa-solid fa-file-invoice-dollar mr-2"></i> B1-B3: Báo Giá</div>
             <div id="col_B1_BaoGia" class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]"></div>
         </div>
 
+        <!-- B4: Chuẩn Bị -->
         <div class="bg-amber-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-amber-200 shadow-sm" ondragover="allowDrop(event)" ondrop="dropCard(event, 'B4_ChuanBi')">
             <div class="p-3 font-bold border-b border-amber-200 text-amber-800 bg-amber-100/50 rounded-t-xl"><i class="fa-solid fa-boxes-packing mr-2"></i> B4: Chuẩn Bị</div>
             <div id="col_B4_ChuanBi" class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]"></div>
         </div>
 
+        <!-- B5: Đang Huấn Luyện -->
         <div class="bg-blue-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-blue-200 shadow-sm" ondragover="allowDrop(event)" ondrop="dropCard(event, 'B5_DangDay')">
             <div class="p-3 font-bold border-b border-blue-200 text-blue-800 bg-blue-100/50 rounded-t-xl"><i class="fa-solid fa-person-chalkboard mr-2"></i> B5: Đang Huấn Luyện</div>
             <div id="col_B5_DangDay" class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]"></div>
         </div>
 
+        <!-- B6: Chờ In Phôi -->
         <div class="bg-purple-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-purple-200 shadow-sm relative overflow-hidden" ondragover="allowDrop(event)" ondrop="dropCard(event, 'B6_ChoInPhoi')">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-300 via-purple-600 to-purple-300 animate-pulse"></div>
             <div class="p-3 font-bold border-b border-purple-200 text-purple-800 bg-purple-100/50 rounded-t-xl"><i class="fa-solid fa-robot mr-2"></i> B6: Chờ Python In Thẻ</div>
             <div id="col_B6_ChoInPhoi" class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]"></div>
         </div>
         
+        <!-- B7: Đã Hoàn Thành -->
         <div class="bg-green-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-green-200 shadow-sm" ondragover="allowDrop(event)" ondrop="dropCard(event, 'B7_HoanTat')">
             <div class="p-3 font-bold border-b border-green-200 text-green-800 bg-green-100/50 rounded-t-xl"><i class="fa-solid fa-circle-check mr-2"></i> Lưu Trữ</div>
             <div id="col_B7_HoanTat" class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]"></div>
         </div>
     </div>
 
+    <!-- MODAL TẠO LỚP MỚI (Bổ sung ô Nội dung) -->
     <div id="modalCreate" class="hidden absolute top-0 left-0 w-full h-full bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-xl shadow-2xl w-96">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">LÊN ĐƠN BÁO GIÁ MỚI</h3>
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">LÊN ĐƠN BÁO GIÁ MỚI</h3>
             <form id="formCreateClass" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Mã Số Thuế</label>
+                    <label class="block text-sm font-medium text-gray-700">Mã Số Thuế *</label>
                     <input type="text" id="newMST" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Tên Công Ty</label>
+                    <label class="block text-sm font-medium text-gray-700">Tên Công Ty *</label>
                     <input type="text" id="newTenCTY" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Mã Lớp / Nhóm huấn luyện</label>
-                    <input type="text" id="newLop" placeholder="VD: Nhom_1_2_3" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 outline-none">
+                    <label class="block text-sm font-medium text-gray-700">Mã Lớp / Nhóm huấn luyện *</label>
+                    <input type="text" id="newLop" required class="mt-1 w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded focus:ring-blue-500 outline-none font-mono text-sm text-blue-700">
                 </div>
-                <div class="flex justify-end gap-2 mt-6">
-                    <button type="button" onclick="document.getElementById('modalCreate').classList.add('hidden')" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded hover:bg-gray-300">Hủy</button>
-                    <button type="submit" id="btnSubmitCreate" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700">Tạo mới</button>
+                
+                <!-- Ô NHẬP NỘI DUNG HUẤN LUYỆN -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nội dung huấn luyện</label>
+                    <textarea id="newNoiDung" rows="2" placeholder="VD: Huấn luyện nhóm 3 hóa chất, nhóm 4 hàn cắt..." class="mt-1 w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 outline-none text-sm resize-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
+                    <button type="button" onclick="document.getElementById('modalCreate').classList.add('hidden')" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded hover:bg-gray-300 transition-colors">Hủy</button>
+                    <button type="submit" id="btnSubmitCreate" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 transition-colors shadow-sm">Tạo mới</button>
                 </div>
             </form>
         </div>
