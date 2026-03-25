@@ -1,10 +1,9 @@
-// Phiên bản: 1.19
-// File Logic điều phối trung tâm của Dashboard
-// Chức năng: Phân quyền, Kanban, Tra cứu MST Quốc gia & Tự động sinh Mã lớp
+// Phiên bản: 1.20
+// Chức năng: Phân quyền, Kanban, Tra cứu MST (Chuẩn hóa số 0) & Tự động sinh Mã lớp
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update } from './firebase-config.js';
 
-// LINK WEB APP GAS MỚI CỦA ANH
+// LINK WEB APP GAS CỦA ANH
 const GAS_URL_SYSTEM = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
 
 onAuthStateChanged(auth, (user) => {
@@ -136,13 +135,20 @@ window.dropCard = async (ev, newStatus) => {
     } catch(err) { alert("Lỗi khi chuyển trạng thái: " + err.message); }
 };
 
-// --- HÀM TRA CỨU MST QUA GAS ---
+// --- HÀM TRA CỨU & CHUẨN HÓA MST ---
 window.autoFillData = async function() {
     const mstInput = document.getElementById('newMST');
     const tenInput = document.getElementById('newTenCTY');
     const lopInput = document.getElementById('newLop');
-    const mst = mstInput.value.trim();
+    
+    let mst = mstInput.value.trim();
     if (!mst) return;
+
+    // CHUẨN HÓA: Nếu gõ 9 số và không có số 0 ở đầu -> Tự bù số 0
+    if (mst.length === 9 && !mst.startsWith('0')) {
+        mst = '0' + mst;
+        mstInput.value = mst; // Cập nhật lại UI
+    }
 
     const currentYear = new Date().getFullYear().toString();
     let nextStt = 1;
@@ -172,7 +178,7 @@ window.autoFillData = async function() {
 
         if (foundName && tenInput.value.trim() === '') tenInput.value = foundName;
 
-        // 3. Sinh mã lớp
+        // 3. Sinh mã lớp (Dựa trên MST đã chuẩn hóa)
         const snapLop = await get(child(ref(db), `KhachHang/${mst}/CacLopHuanLuyen`));
         if (snapLop.exists()) {
             const cacLop = snapLop.val();
@@ -186,7 +192,9 @@ window.autoFillData = async function() {
             });
             nextStt = maxStt + 1;
         }
-        if (lopInput.value.trim() === '' || lopInput.value.startsWith(mst)) {
+        
+        // Chỉ cập nhật mã lớp nếu ô đang trống hoặc đang chứa mã cũ của chính MST này
+        if (lopInput.value.trim() === '' || lopInput.value.includes(mst.substring(1))) {
             lopInput.value = `${mst}-${currentYear}-${nextStt}`;
         }
     } catch (err) { console.error("Lỗi autoFill:", err); }
@@ -225,4 +233,41 @@ window.setupKanbanEvents = function() {
         const mstInput = document.getElementById('newMST');
         if(mstInput) { mstInput.removeEventListener('blur', autoFillData); mstInput.addEventListener('blur', autoFillData); }
     }, 200);
+};
+
+// --- LOGIC QUẢN LÝ TÀI KHOẢN (ADMIN) ---
+window.loadAdminUsers = async function() {
+    const tbody = document.getElementById('userTableBody');
+    if (!tbody) return;
+    try {
+        const snapshot = await get(child(ref(db), `AccessControl`));
+        if (snapshot.exists()) {
+            let html = '';
+            snapshot.forEach((childSnapshot) => {
+                const safeEmail = childSnapshot.key;
+                const data = childSnapshot.val();
+                const isLocked = data.TrangThai !== 'Active';
+                html += `
+                    <tr class="hover:bg-blue-50/50 transition-colors border-b border-gray-100">
+                        <td class="p-4 font-medium text-gray-800">${data.HoTen || 'Chưa cập nhật'}</td>
+                        <td class="p-4 text-gray-600">${data.Email}</td>
+                        <td class="p-4 text-center">${data.Role === 'Admin' ? '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">Admin</span>' : 'Nhân viên'}</td>
+                        <td class="p-4 text-center">${isLocked ? '<span class="text-red-600 font-bold">Bị khóa</span>' : '<span class="text-green-600 font-bold">Active</span>'}</td>
+                        <td class="p-4 text-center">
+                            <button onclick="toggleUserStatus('${safeEmail}', '${data.TrangThai}')" class="text-xs bg-slate-100 p-1.5 rounded hover:bg-slate-200">
+                                <i class="fa-solid ${isLocked ? 'fa-unlock text-green-600' : 'fa-lock text-red-600'}"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+    } catch (e) { console.error("Lỗi tải Admin:", e); }
+};
+
+window.toggleUserStatus = async function(safeEmail, currentStatus) {
+    if(!confirm('Thay đổi trạng thái tài khoản này?')) return;
+    const newStatus = currentStatus === 'Active' ? 'Locked' : 'Active';
+    await update(ref(db, `AccessControl/${safeEmail}`), { TrangThai: newStatus });
+    loadAdminUsers();
 };
