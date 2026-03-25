@@ -1,4 +1,4 @@
-// Phiên bản: 1.16
+// Phiên bản: 1.17
 // File Logic điều phối trung tâm của Dashboard (TEST)
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update } from './firebase-config.js';
@@ -63,14 +63,12 @@ async function initApp(user) {
     loadView('views/kanban.html');
 }
 
-// GỘP CHUNG LOGIC ĐIỀU HƯỚNG VÀO ĐÂY
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
     contentDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-blue-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-3"></i><span class="font-medium text-gray-500">Đang tải giao diện...</span></div>`;
     
     await loadComponent("layout-content", viewFile);
     
-    // Kiểm tra xem vừa tải màn hình nào để gọi logic tương ứng
     if (viewFile === 'views/admin-users.html') {
         loadAdminUsers();
     } else if (viewFile === 'views/kanban.html') {
@@ -142,7 +140,6 @@ window.toggleUserRole = async function(safeEmail, currentRole) {
     loadAdminUsers();
 };
 
-
 // ==========================================
 // LOGIC MÀN HÌNH KANBAN (KÉO THẢ & FIREBASE)
 // ==========================================
@@ -150,7 +147,6 @@ window.toggleUserRole = async function(safeEmail, currentRole) {
 window.loadKanbanData = async function() {
     const cols = ['B1_BaoGia', 'B4_ChuanBi', 'B5_DangDay', 'B6_ChoInPhoi', 'B7_HoanTat'];
     
-    // Reset rỗng các cột trước khi nạp dữ liệu
     cols.forEach(c => {
         const el = document.getElementById('col_' + c);
         if(el) el.innerHTML = '';
@@ -169,7 +165,6 @@ window.loadKanbanData = async function() {
                         const lopData = khData.CacLopHuanLuyen[lopId];
                         const status = lopData.TrangThai || 'B1_BaoGia';
                         
-                        // Vẽ Thẻ Công ty (Card HTML)
                         const cardHTML = `
                             <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all" 
                                  draggable="true" 
@@ -183,7 +178,6 @@ window.loadKanbanData = async function() {
                             </div>
                         `;
                         
-                        // Nhét thẻ vào đúng cột
                         const colEl = document.getElementById('col_' + status);
                         if(colEl) {
                             colEl.insertAdjacentHTML('beforeend', cardHTML);
@@ -223,6 +217,54 @@ window.dropCard = async function(ev, newStatus) {
     }
 };
 
+// --- HÀM MỚI: TỰ ĐỘNG ĐIỀN TÊN CÔNG TY VÀ SINH MÃ LỚP ---
+window.autoFillData = async function() {
+    const mstInput = document.getElementById('newMST');
+    const tenInput = document.getElementById('newTenCTY');
+    const lopInput = document.getElementById('newLop');
+    
+    const mst = mstInput.value.trim();
+    if (!mst) return;
+
+    const currentYear = new Date().getFullYear().toString();
+    let nextStt = 1;
+
+    try {
+        // 1. Tìm xem Công ty này đã có Tên chưa, nếu có thì tự điền
+        const snapTen = await get(child(ref(db), `KhachHang/${mst}/ThongTinGoc/TenCongTy`));
+        if (snapTen.exists() && tenInput.value.trim() === '') {
+            tenInput.value = snapTen.val();
+        }
+
+        // 2. Đếm số lớp của Công ty này trong Năm nay để tính STT
+        const snapLop = await get(child(ref(db), `KhachHang/${mst}/CacLopHuanLuyen`));
+        if (snapLop.exists()) {
+            const cacLop = snapLop.val();
+            const prefix = `${mst}-${currentYear}-`;
+            let maxStt = 0;
+            
+            Object.keys(cacLop).forEach(key => {
+                if (key.startsWith(prefix)) {
+                    const parts = key.split('-');
+                    const stt = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(stt) && stt > maxStt) {
+                        maxStt = stt;
+                    }
+                }
+            });
+            nextStt = maxStt + 1;
+        }
+
+        // 3. Tự động sinh mã vào ô (chỉ sinh khi ô còn trống hoặc đang chứa mã cũ do hệ thống tự sinh)
+        if (lopInput.value.trim() === '' || lopInput.value.startsWith(mst)) {
+            lopInput.value = `${mst}-${currentYear}-${nextStt}`;
+        }
+
+    } catch (err) {
+        console.error("Lỗi tự động điền dữ liệu: ", err);
+    }
+};
+
 window.submitNewClass = async function(ev) {
     ev.preventDefault();
     const btn = document.getElementById('btnSubmitCreate');
@@ -239,7 +281,10 @@ window.submitNewClass = async function(ev) {
     const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth()+1).toString().padStart(2, '0')}/${today.getFullYear()}`;
 
     try {
-        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten });
+        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { 
+            TenCongTy: ten,
+            MST: mst // Bổ sung lưu luôn thuộc tính MST cho chắc chắn
+        });
         await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
             TrangThai: "B1_BaoGia",
             NgayTao: dateStr
@@ -258,10 +303,19 @@ window.submitNewClass = async function(ev) {
 window.setupKanbanEvents = function() {
     setTimeout(() => {
         loadKanbanData();
+        
+        // Gắn sự kiện cho Form Lên Đơn
         const form = document.getElementById('formCreateClass');
         if(form) {
             form.removeEventListener('submit', submitNewClass);
             form.addEventListener('submit', submitNewClass);
+        }
+
+        // Gắn sự kiện kích hoạt tự động sinh mã khi vừa gõ xong MST (Rời chuột khỏi ô nhập)
+        const mstInput = document.getElementById('newMST');
+        if(mstInput) {
+            mstInput.removeEventListener('blur', autoFillData);
+            mstInput.addEventListener('blur', autoFillData);
         }
     }, 200);
 };
