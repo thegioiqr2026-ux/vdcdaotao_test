@@ -1,18 +1,108 @@
+<!-- Phiên bản: 1.14 -->
 <div class="h-full flex flex-col">
-    <div class="mb-4 flex justify-between items-end">
+    <!-- Khu vực Tiêu đề & Nút bấm -->
+    <div class="mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
-            <h2 class="text-2xl font-bold text-gray-800">QUẢN LÝ QUY TRÌNH KANBAN</h2>
-            <p class="text-sm text-gray-500">Kéo thả các thẻ lớp học để thay đổi trạng thái tiến độ.</p>
+            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-wide">Quản lý luồng Kanban</h2>
+            <p class="text-sm text-gray-500">Kéo thả các thẻ công ty để cập nhật trạng thái tiến độ tự động.</p>
         </div>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition-colors flex items-center gap-2">
-            <i class="fa-solid fa-plus"></i> Tạo Lớp Mới
+        <button id="btnCreateClass" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-plus"></i> Lên Đơn Mới
         </button>
     </div>
 
-    <div class="flex-1 flex gap-4 overflow-x-auto pb-2" id="kanbanBoard">
-        <div class="flex flex-col items-center justify-center w-full h-full text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-white">
-            <i class="fa-solid fa-layer-group text-4xl mb-3 text-gray-300"></i>
-            <p class="text-lg font-medium text-gray-500">Giao diện Kanban đang được thiết kế...</p>
+    <!-- Bảng Kéo thả Kanban -->
+    <div class="flex-1 flex gap-5 overflow-x-auto pb-4 custom-scrollbar select-none" id="kanbanBoard">
+        
+        <!-- Cột B1-B3: Báo Giá -->
+        <div class="bg-slate-100/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-slate-200 shadow-sm">
+            <div class="p-3 font-bold border-b border-slate-200 text-slate-700 flex justify-between items-center bg-slate-200/50 rounded-t-xl">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-slate-500"></i> B1-B3: Báo Giá</span>
+                <span class="bg-white text-slate-600 px-2.5 py-0.5 rounded-full text-xs shadow-sm border border-slate-200">2</span>
+            </div>
+            <div class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]">
+                
+                <!-- Thẻ Công ty Mẫu 1 -->
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all" draggable="true">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider">0312345678</span>
+                        <button class="text-gray-400 hover:text-blue-600 transition-colors"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1 leading-snug">Công ty Cổ phần Tập đoàn VDC Test</h3>
+                    <p class="text-xs text-gray-500 mb-3"><i class="fa-regular fa-clock mr-1"></i>Tạo: 26/03/2026</p>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] font-medium bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100"><i class="fa-solid fa-file-excel mr-1"></i>Chưa có DS</span>
+                    </div>
+                </div>
+
+                <!-- Thẻ Công ty Mẫu 2 -->
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all" draggable="true">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider">0109998887</span>
+                        <button class="text-gray-400 hover:text-blue-600 transition-colors"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1 leading-snug">Công ty TNHH Sản xuất ABC</h3>
+                    <p class="text-xs text-gray-500 mb-3"><i class="fa-regular fa-clock mr-1"></i>Tạo: 25/03/2026</p>
+                </div>
+
+            </div>
         </div>
+
+        <!-- Cột B4: Chuẩn bị -->
+        <div class="bg-amber-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-amber-200 shadow-sm">
+            <div class="p-3 font-bold border-b border-amber-200 text-amber-800 flex justify-between items-center bg-amber-100/50 rounded-t-xl">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-boxes-packing text-amber-600"></i> B4: Chuẩn Bị</span>
+                <span class="bg-white text-amber-600 px-2.5 py-0.5 rounded-full text-xs shadow-sm border border-amber-200">1</span>
+            </div>
+            <div class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]">
+                
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-amber-200 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all" draggable="true">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase tracking-wider">0405556667</span>
+                        <button class="text-gray-400 hover:text-blue-600 transition-colors"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1 leading-snug">Doanh nghiệp Tư nhân XYZ</h3>
+                    <div class="flex gap-2 mt-3">
+                        <span class="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded border border-green-200"><i class="fa-solid fa-check mr-1"></i>Đã tải DS Excel</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Cột B5: Đang huấn luyện -->
+        <div class="bg-blue-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-blue-200 shadow-sm">
+            <div class="p-3 font-bold border-b border-blue-200 text-blue-800 flex justify-between items-center bg-blue-100/50 rounded-t-xl">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-person-chalkboard text-blue-600"></i> B5: Đang Huấn Luyện</span>
+                <span class="bg-white text-blue-600 px-2.5 py-0.5 rounded-full text-xs shadow-sm border border-blue-200">0</span>
+            </div>
+            <div class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px] flex items-center justify-center border-2 border-dashed border-transparent">
+                <p class="text-xs text-blue-300 font-medium">Kéo thả thẻ vào đây...</p>
+            </div>
+        </div>
+
+        <!-- Cột B6: Chờ In Phôi -->
+        <div class="bg-purple-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-purple-200 shadow-sm relative overflow-hidden">
+            <!-- Hiệu ứng viền chạy cho cột Python -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-300 via-purple-600 to-purple-300 animate-pulse"></div>
+            
+            <div class="p-3 font-bold border-b border-purple-200 text-purple-800 flex justify-between items-center bg-purple-100/50 rounded-t-xl">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-robot text-purple-600"></i> B6: Chờ Python In Thẻ</span>
+                <span class="bg-white text-purple-600 px-2.5 py-0.5 rounded-full text-xs shadow-sm border border-purple-200">0</span>
+            </div>
+            <div class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px] flex items-center justify-center border-2 border-dashed border-transparent">
+                <p class="text-xs text-purple-300 font-medium text-center">Các lớp ở đây sẽ được<br>VDC Launcher kéo về tự động</p>
+            </div>
+        </div>
+        
+        <!-- Cột B7: Đã Hoàn Thành -->
+        <div class="bg-green-50/80 rounded-xl w-72 md:w-80 flex-shrink-0 flex flex-col border border-green-200 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+            <div class="p-3 font-bold border-b border-green-200 text-green-800 flex justify-between items-center bg-green-100/50 rounded-t-xl">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-green-600"></i> Lưu Trữ</span>
+                <span class="bg-white text-green-600 px-2.5 py-0.5 rounded-full text-xs shadow-sm border border-green-200">0</span>
+            </div>
+            <div class="p-2.5 flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]"></div>
+        </div>
+
     </div>
 </div>
