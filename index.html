@@ -1,0 +1,45 @@
+<!-- Phiên bản: 1.7 -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VDC CRM - Bảng Điều Khiển (TEST)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Tùy chỉnh thanh cuộn cho giao diện nhìn giống App chuyên nghiệp */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-track { background: transparent; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex overflow-hidden hidden" id="appBody">
+    
+    <!-- 1. Khung chứa thanh Menu bên trái (Sidebar) -->
+    <div id="layout-sidebar" class="h-full z-20 transition-all duration-300"></div>
+
+    <!-- Khu vực nội dung chính bên phải -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- 2. Khung chứa thanh Header phía trên -->
+        <div id="layout-header" class="z-10 shadow-sm"></div>
+        
+        <!-- 3. Khu vực trung tâm: Nơi nhúng các màn hình (Kanban, Danh sách...) -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 relative" id="layout-content">
+            <!-- Màn hình chờ tải dữ liệu mặc định -->
+            <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-3"></i> 
+                <span class="font-medium">Đang kết nối hệ thống...</span>
+            </div>
+        </main>
+        
+        <!-- 4. Khung chứa thanh Footer phía dưới -->
+        <div id="layout-footer"></div>
+    </div>
+
+    <!-- Nhúng file logic điều phối (Keo dán) -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
