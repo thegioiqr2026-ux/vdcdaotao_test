@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo giá Huấn luyện ATVSLĐ - VDC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; background-color: #f3f4f6; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white; margin: 0; padding: 0; }
+            .print-container { width: 210mm; min-height: 297mm; padding: 15mm; margin: 0; shadow: none; }
+            @page { size: A4; margin: 0; }
+        }
+        .print-container { width: 210mm; min-height: 297mm; padding: 15mm; margin: 20px auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; }
+        table, th, td { border: 1px solid black !important; border-collapse: collapse; }
+    </style>
+</head>
+<body>
+
+    <!-- Thanh công cụ điều khiển -->
+    <div class="no-print fixed top-0 left-0 right-0 bg-slate-800 text-white p-4 flex justify-center gap-4 z-50 shadow-lg">
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-bold transition-all flex items-center gap-2">
+            <i class="fa-solid fa-print"></i> XUẤT FILE PDF / IN
+        </button>
+        <button onclick="window.close()" class="bg-slate-600 hover:bg-slate-500 px-6 py-2 rounded transition-all">
+            Đóng trang
+        </button>
+    </div>
+
+    <div class="print-container">
+        <!-- Header Công ty -->
+        <div class="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+            <div class="w-full">
+                <h1 class="text-[17px] font-bold text-blue-900 uppercase">CÔNG TY CỔ PHẦN HỢP TÁC QUỐC TẾ VDC</h1>
+                <p class="text-[12px] font-bold italic text-blue-800">VDC INTERNATIONAL COOPERATION JOINT STOCK COMPANY</p>
+                <p class="text-[11px] mt-1">Trụ sở: Số nhà 46, LK11, KĐTM Đông Sơn, P.Đông Quang, Tp.Thanh Hóa, Tỉnh Thanh Hóa</p>
+                <p class="text-[11px]">Website: https://kiemdinhvdc.com/ | Email: sirhai84@gmail.com</p>
+            </div>
+        </div>
+
+        <!-- Tiêu đề báo giá -->
+        <div class="text-center mb-6">
+            <h2 class="text-[18px] font-bold uppercase">BẢNG BÁO GIÁ CHI PHÍ HUẤN LUYỆN AN TOÀN, VỆ SINH LAO ĐỘNG</h2>
+            <p class="text-[13px] italic mt-1">Số: <span id="outID" class="font-bold">01_2603/2026/KD01</span></p>
+        </div>
+
+        <!-- Thông tin khách hàng -->
+        <div class="mb-6 space-y-1 text-[14px] leading-relaxed">
+            <p><span class="inline-block w-20 italic">Kính gửi:</span> <strong id="outTen" class="uppercase">QUÝ CÔNG TY</strong></p>
+            <p class="text-justify italic text-[13px] pl-4">
+                - Căn cứ Luật An toàn, vệ sinh lao động số 84/2015/QH13 ngày 25/06/2015;<br>
+                - Căn cứ Nghị định số 44/2016/NĐ-CP và Nghị định 140/2018/NĐ-CP của Chính phủ.
+            </p>
+            <p class="mt-2 text-[14px]">Công ty chúng tôi hân hạnh gửi tới Quý khách hàng bảng chi phí các khóa huấn luyện như sau:</p>
+        </div>
+
+        <!-- Bảng giá -->
+        <table class="w-full text-[13.5px]">
+            <thead>
+                <tr class="bg-gray-100 font-bold text-center">
+                    <td class="p-2 w-10">Stt</td>
+                    <td class="p-2 text-left">Nội dung dịch vụ</td>
+                    <td class="p-2 w-20">Đơn vị</td>
+                    <td class="p-2 w-16">SL</td>
+                    <td class="p-2 w-28">Đơn giá</td>
+                    <td class="p-2 w-32">Thành tiền</td>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Code JS sẽ chèn nội dung vào đây -->
+            </tbody>
+            <tfoot>
+                <tr class="font-bold text-[14px]">
+                    <td colspan="5" class="p-2 text-right uppercase">Tổng cộng giá trị thanh toán (Chưa VAT):</td>
+                    <td id="outTong" class="p-2 text-right text-red-600">0 VNĐ</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Ghi chú -->
+        <div class="mt-4 text-[13px] leading-snug">
+            <p><strong>Ghi chú:</strong></p>
+            <p>- Dịch vụ huấn luyện không chịu thuế GTGT.</p>
+            <p>- Mọi thông tin chi tiết liên hệ: <strong>Mr Hải - 0978 191 360</strong> / <strong>Mr Cường - 0906 692 878</strong></p>
+            <p class="italic mt-2 text-center text-[14px]">Xin cảm ơn Quý Công ty đã quan tâm đến dịch vụ của Công ty chúng tôi!</p>
+        </div>
+
+        <!-- Chữ ký -->
+        <div class="mt-10 grid grid-cols-2 text-center text-[14px]">
+            <div>
+                <p class="font-bold uppercase">Xác nhận của khách hàng</p>
+                <p class="text-[11px] italic">(Ký, ghi rõ họ tên, đóng dấu)</p>
+            </div>
+            <div>
+                <p class="italic">Ngày <span id="curDay">...</span> tháng <span id="curMonth">...</span> năm 2026</p>
+                <p class="font-bold uppercase mt-1 text-blue-900">Xác nhận của CÔNG TY CỔ PHẦN VDC</p>
+                <div class="h-28 flex items-center justify-center">
+                    <!-- Khu vực đóng dấu điện tử nếu có -->
+                </div>
+                <p class="font-bold uppercase">TRẦN CÔNG ĐẸP</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Lấy dữ liệu từ URL truyền sang
+        const params = new URLSearchParams(window.location.search);
+        
+        // Gán thông tin khách hàng
+        document.getElementById('outTen').textContent = params.get('ten') || 'Quý Công ty';
+        document.getElementById('outID').textContent = params.get('id') || '01/2026/VDC';
+        
+        // Xử lý ngày tháng hiện tại
+        const d = new Date();
+        document.getElementById('curDay').textContent = d.getDate();
+        document.getElementById('curMonth').textContent = d.getMonth() + 1;
+
+        // 2. Tính toán tiền
+        const sl = parseInt(params.get('sl')) || 0;
+        const pdc = parseInt(params.get('pdc')) || 0;
+        const dongiaHV = 150000;
+        const phiGV = 2000000;
+
+        const thanhTienHV = sl * dongiaHV;
+        const total = thanhTienHV + phiGV + pdc;
+
+        // 3. Render bảng
+        const html = `
+            <tr>
+                <td class="p-2 text-center">1</td>
+                <td class="p-2">Huấn luyện ATVSLĐ nhóm 1,2,3,4,6 theo NĐ 44/2016 và NĐ 140/2018</td>
+                <td class="p-2 text-center">Học viên</td>
+                <td class="p-2 text-center">${sl}</td>
+                <td class="p-2 text-right">${dongiaHV.toLocaleString()}</td>
+                <td class="p-2 text-right font-bold">${thanhTienHV.toLocaleString()}</td>
+            </tr>
+            <tr>
+                <td class="p-2 text-center">2</td>
+                <td class="p-2">Chi phí giảng viên huấn luyện</td>
+                <td class="p-2 text-center">Khóa</td>
+                <td class="p-2 text-center">01</td>
+                <td class="p-2 text-right">${phiGV.toLocaleString()}</td>
+                <td class="p-2 text-right font-bold">${phiGV.toLocaleString()}</td>
+            </tr>
+            <tr>
+                <td class="p-2 text-center">3</td>
+                <td class="p-2">Chi phí di chuyển & lưu trú</td>
+                <td class="p-2 text-center">Gói</td>
+                <td class="p-2 text-center">01</td>
+                <td class="p-2 text-right">${pdc.toLocaleString()}</td>
+                <td class="p-2 text-right font-bold">${pdc.toLocaleString()}</td>
+            </tr>
+        `;
+        document.getElementById('tableBody').innerHTML = html;
+        document.getElementById('outTong').textContent = total.toLocaleString() + " VNĐ";
+    </script>
+</body>
+</html>
