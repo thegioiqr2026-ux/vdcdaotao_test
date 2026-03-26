@@ -15,8 +15,14 @@ onAuthStateChanged(auth, (user) => {
 
 async function loadComponent(id, file) {
     try {
-        const response = await fetch(file);
-        if (response.ok) document.getElementById(id).innerHTML = await response.text();
+        // Thêm timestamp vào đuôi URL để ép trình duyệt luôn tải file mới nhất (Bypass Cache)
+        const noCacheUrl = file + '?v=' + new Date().getTime(); 
+        const response = await fetch(noCacheUrl);
+        if (response.ok) {
+            document.getElementById(id).innerHTML = await response.text();
+        } else {
+            console.error(`Lỗi tải file: ${file}`);
+        }
     } catch (error) { console.error(`Lỗi tải ${file}:`, error); }
 }
 
