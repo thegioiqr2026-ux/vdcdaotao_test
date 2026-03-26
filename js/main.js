@@ -247,5 +247,39 @@ window.setupKanbanEvents = function() {
     }, 300);
 };
 
-// Export các hàm ra window để HTML gọi được
-window.printQuote = () => alert("Tính năng In Báo Giá đang được kết nối...");
+// Cập nhật hàm In Báo Giá thực tế (V1.24 - Dự án vdcdaotao-test)
+window.printQuote = function() {
+    // 1. Kiểm tra xem đã chọn thẻ nào chưa
+    if (!currentSelectedCard.mst) {
+        alert("Không tìm thấy dữ liệu thẻ!");
+        return;
+    }
+
+    // 2. Lấy thông tin từ giao diện Modal chi tiết
+    const mst = currentSelectedCard.mst;
+    const lopId = currentSelectedCard.lopId;
+    const tenCty = currentSelectedCard.tenCty;
+    const diaChi = document.getElementById('detDiaChi').textContent;
+    const noiDung = document.getElementById('detNoiDung').textContent;
+
+    // 3. Hỏi nhanh thông số để tính tiền
+    const slHocVien = prompt("Nhập số lượng học viên:", "20");
+    if (slHocVien === null) return; 
+    
+    const phiDiChuyen = prompt("Nhập phí di chuyển & lưu trú (VNĐ):", "500000");
+    if (phiDiChuyen === null) return;
+
+    // 4. Tạo link truyền dữ liệu sang trang print-quote.html
+    const params = new URLSearchParams({
+        mst: mst,
+        ten: tenCty,
+        dc: diaChi,
+        nd: noiDung,
+        sl: slHocVien,
+        pdc: phiDiChuyen,
+        id: lopId
+    });
+
+    // 5. Mở trang in trong tab mới
+    window.open(`views/print-quote.html?${params.toString()}`, '_blank');
+};
