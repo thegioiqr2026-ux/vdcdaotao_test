@@ -1,10 +1,10 @@
 // Phiên bản: 1.23
-// Cấu hình kết nối Firebase Tập trung cho Hệ thống VDC
+// Cấu hình Firebase tập trung cho dự án VDC
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getDatabase, ref, get, child, update, set, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Cấu hình Firebase của anh Công Đẹp
+// Thông số cấu hình Firebase của anh
 const firebaseConfig = { 
     apiKey: "AIzaSyCzWjfcD5Dgq7V-i2izb9tKLR6QM6qWPQo", 
     authDomain: "tavietnam-78ae8.firebaseapp.com", 
@@ -14,27 +14,27 @@ const firebaseConfig = {
     appId: "1:670121705534:web:1027ad98550573ad37116f" 
 };
 
-// Khởi tạo Firebase
+// Khởi tạo các dịch vụ
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// Xuất các biến và hàm cần thiết để các file JS khác sử dụng
+// Xuất bản (Export) các hàm để file main.js có thể sử dụng
 export { 
     auth, 
     db, 
-    // Các hàm Authentication
+    // Các hàm xác thực (Authentication)
     onAuthStateChanged, 
     signOut, 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,
-    // Các hàm Realtime Database
+    // Các hàm dữ liệu (Realtime Database)
     ref, 
     get, 
     child, 
     update, 
     set, 
-    push, // Quan trọng: Dùng để tạo Nhật ký Timeline
+    push, // Hàm này bắt buộc phải có để chạy Nhật ký Timeline
     remove 
 };
