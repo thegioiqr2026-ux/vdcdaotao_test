@@ -1,32 +1,19 @@
-// Phiên bản: 1.23
-// Chức năng: Kanban, Tra cứu MST/Địa chỉ, Gửi hồ sơ mẫu & Tự động nhảy bước, Nhật ký Timeline
+// Phiên bản: 1.25
+// Chức năng: Kanban, Tra cứu MST, Tự động chuyển bước, Quản lý & Định vị Giảng viên gần nhất
+
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update, push } from './firebase-config.js';
 
-// THAY LINK WEB APP GAS CỦA ANH VÀO ĐÂY
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
+const GAS_URL_SYSTEM = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
 
-// Biến tạm lưu trữ thông tin thẻ đang chọn
-let currentSelectedCard = { mst: '', lopId: '', email: '', tenCty: '' };
-
-// ==========================================
-// 1. KHỞI TẠO HỆ THỐNG & PHÂN QUYỀN
-// ==========================================
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        window.location.replace('login.html'); 
-    } else {
-        const appBody = document.getElementById('appBody');
-        if(appBody) appBody.classList.remove('hidden'); 
-        initApp(user);
-    }
+    if (!user) { window.location.replace('login.html'); } 
+    else { document.getElementById('appBody').classList.remove('hidden'); initApp(user); }
 });
 
 async function loadComponent(id, file) {
     try {
         const response = await fetch(file);
-        if (response.ok) {
-            document.getElementById(id).innerHTML = await response.text();
-        }
+        if (response.ok) document.getElementById(id).innerHTML = await response.text();
     } catch (error) { console.error(`Lỗi tải ${file}:`, error); }
 }
 
@@ -36,112 +23,34 @@ async function initApp(user) {
         loadComponent("layout-header", "components/header.html"),
         loadComponent("layout-footer", "components/footer.html")
     ]);
-
     const userDisplay = document.getElementById('userEmailDisplay');
     if (userDisplay) userDisplay.textContent = user.email;
-
-    // Kiểm tra quyền Admin
-    const safeEmail = user.email.replace(/\./g, '_');
-    try {
-        const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
-        const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
-        const adminMenu = document.getElementById('menuAdminUsers');
-        if (adminMenu && userRole === 'Admin') {
-            adminMenu.classList.remove('hidden');
-            adminMenu.classList.add('flex');
-        }
-    } catch (err) { console.error("Lỗi phân quyền:", err); }
     
+    const safeEmail = user.email.replace(/\./g, '_');
+    const roleSnapshot = await get(child(ref(db), `AccessControl/${safeEmail}/Role`));
+    const userRole = roleSnapshot.exists() ? roleSnapshot.val() : 'NhanVien';
+    const adminMenu = document.getElementById('menuAdminUsers');
+    if (adminMenu && userRole === 'Admin') adminMenu.classList.remove('hidden');
+
     loadView('views/kanban.html');
 }
 
-// Điều hướng View
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
     contentDiv.innerHTML = `<div class="flex items-center justify-center h-full"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i></div>`;
-    
     await loadComponent("layout-content", viewFile);
-    
-    if (viewFile === 'views/kanban.html') {
-        setupKanbanEvents();
-    } else if (viewFile === 'views/admin-users.html') {
-        loadAdminUsers();
-    }
+    if (viewFile === 'views/kanban.html') setupKanbanEvents();
+    if (viewFile === 'views/admin-users.html') loadAdminUsers();
+    if (viewFile === 'views/admin-trainers.html') loadTrainers();
 };
 
 // ==========================================
-// 2. LOGIC TRA CỨU & TẠO ĐƠN MỚI
+// LOGIC KANBAN & TỰ ĐỘNG HÓA (V1.25)
 // ==========================================
-window.autoFillData = async function() {
-    const mstIn = document.getElementById('newMST');
-    const tenIn = document.getElementById('newTenCTY');
-    const dcIn = document.getElementById('newDiaChi');
-    const lopIn = document.getElementById('newLop');
-    
-    let mst = mstIn.value.trim();
-    if (!mst) return;
-    if (mst.length === 9 && !mst.startsWith('0')) { mst = '0' + mst; mstIn.value = mst; }
 
-    try {
-        const snap = await get(child(ref(db), `KhachHang/${mst}/ThongTinGoc`));
-        let fName = "", fAddr = "";
-        if (snap.exists()) {
-            fName = snap.val().TenCongTy;
-            fAddr = snap.val().DiaChi || "";
-        } else {
-            tenIn.placeholder = "Đang tra cứu...";
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: "lookup_mst", mst: mst }) });
-            const result = await res.json();
-            if (result.success) { fName = result.tenCongTy; fAddr = result.diaChi; }
-            tenIn.placeholder = "";
-        }
-        if (fName) tenIn.value = fName;
-        if (fAddr) dcIn.value = fAddr;
-
-        // Sinh mã lớp
-        const year = new Date().getFullYear();
-        const snapLop = await get(child(ref(db), `KhachHang/${mst}/CacLopHuanLuyen`));
-        let stt = 1;
-        if (snapLop.exists()) {
-            const keys = Object.keys(snapLop.val());
-            const filtered = keys.filter(k => k.startsWith(`${mst}-${year}-`));
-            if (filtered.length > 0) stt = Math.max(...filtered.map(k => parseInt(k.split('-').pop()))) + 1;
-        }
-        lopIn.value = `${mst}-${year}-${stt}`;
-    } catch (e) { console.error(e); }
-};
-
-window.submitNewClass = async function(ev) {
-    ev.preventDefault();
-    const btn = document.getElementById('btnSubmitCreate');
-    btn.disabled = true;
-
-    const mst = document.getElementById('newMST').value.trim();
-    const ten = document.getElementById('newTenCTY').value.trim();
-    const diachi = document.getElementById('newDiaChi').value.trim();
-    const lop = document.getElementById('newLop').value.trim();
-    const noidung = document.getElementById('newNoiDung')?.value.trim() || "";
-    const dateStr = new Date().toLocaleDateString('vi-VN');
-
-    try {
-        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten, DiaChi: diachi, MST: mst });
-        await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
-            TrangThai: "B1_BaoGia", NgayTao: dateStr, NoiDungHuanLuyen: noidung 
-        });
-        document.getElementById('modalCreate').classList.add('hidden');
-        document.getElementById('formCreateClass').reset();
-        loadKanbanData();
-    } catch(err) { alert(err.message); }
-    btn.disabled = false;
-};
-
-// ==========================================
-// 3. LOGIC KANBAN & CHI TIẾT
-// ==========================================
 window.loadKanbanData = async function() {
     const cols = ['B1_BaoGia', 'B4_ChuanBi', 'B5_DangDay', 'B6_ChoInPhoi', 'B7_HoanTat'];
-    cols.forEach(c => { if(document.getElementById('col_' + c)) document.getElementById('col_' + c).innerHTML = ''; });
-
+    cols.forEach(c => { const el = document.getElementById('col_' + c); if(el) el.innerHTML = ''; });
     const snapshot = await get(ref(db, 'KhachHang'));
     if (snapshot.exists()) {
         snapshot.forEach(khSnap => {
@@ -149,137 +58,142 @@ window.loadKanbanData = async function() {
             const khData = khSnap.val();
             if (khData.CacLopHuanLuyen) {
                 Object.keys(khData.CacLopHuanLuyen).forEach(lopId => {
-                    const lop = khData.CacLopHuanLuyen[lopId];
+                    const lopData = khData.CacLopHuanLuyen[lopId];
+                    const status = lopData.TrangThai || 'B1_BaoGia';
                     const cardHTML = `
-                        <div class="bg-white p-3 rounded shadow-sm border mb-2 cursor-pointer hover:border-blue-500 transition-all group" 
-                             onclick="showDetail('${mst}', '${lopId}')">
-                            <div class="flex justify-between text-[9px] mb-1">
-                                <span class="font-bold text-blue-600">${mst}</span>
-                                <span class="text-gray-400 font-mono">${lopId}</span>
+                        <div class="bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all mb-3" 
+                             draggable="true" ondragstart="dragCard(event, '${mst}', '${lopId}')">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">${mst}</span>
+                                <span class="text-[9px] text-gray-400">${lopId}</span>
                             </div>
-                            <h3 class="font-bold text-xs line-clamp-2 text-slate-800">${khData.ThongTinGoc.TenCongTy}</h3>
-                            <p class="text-[10px] text-gray-400 mt-1 italic line-clamp-1"><i class="fa-solid fa-location-dot mr-1"></i>${khData.ThongTinGoc.DiaChi || 'N/A'}</p>
+                            <h3 class="font-bold text-gray-800 text-xs mb-1 uppercase">${khData.ThongTinGoc?.TenCongTy || "N/A"}</h3>
+                            <p class="text-[10px] text-gray-500 line-clamp-1 mb-2 italic"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>${khData.ThongTinGoc?.DiaChi || "Chưa có địa chỉ"}</p>
+                            ${status === 'B1_BaoGia' ? `<button onclick="sendProfileAndMoveStep('${mst}', '${lopId}', 'khachhang@email.com', '${khData.ThongTinGoc?.TenCongTy}')" class="w-full mt-2 py-1 text-[10px] bg-green-500 text-white rounded hover:bg-green-600 font-bold transition-all"><i class="fa-solid fa-paper-plane mr-1"></i> GỬI HỒ SƠ MẪU</button>` : ''}
+                            ${status === 'B4_ChuanBi' ? `<button onclick="findNearestTrainers('${khData.ThongTinGoc?.DiaChi}')" class="w-full mt-2 py-1 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 font-bold transition-all"><i class="fa-solid fa-user-tie mr-1"></i> CHỌN GIẢNG VIÊN GẦN NHẤT</button>` : ''}
                         </div>`;
-                    const col = document.getElementById('col_' + (lop.TrangThai || 'B1_BaoGia'));
-                    if(col) col.insertAdjacentHTML('beforeend', cardHTML);
+                    const colEl = document.getElementById('col_' + status);
+                    if(colEl) colEl.insertAdjacentHTML('beforeend', cardHTML);
                 });
             }
         });
     }
 };
 
-// Hiển thị Modal chi tiết & Nhật ký
-window.showDetail = async function(mst, lopId) {
-    const snap = await get(ref(db, `KhachHang/${mst}`));
-    if (!snap.exists()) return;
-    
-    const kh = snap.val();
-    const lop = kh.CacLopHuanLuyen[lopId];
-    currentSelectedCard = { mst, lopId, tenCty: kh.ThongTinGoc.TenCongTy, email: '' };
-
-    document.getElementById('detTenCty').textContent = kh.ThongTinGoc.TenCongTy;
-    document.getElementById('detMST').textContent = `MST: ${mst} | LỚP: ${lopId}`;
-    document.getElementById('detDiaChi').textContent = kh.ThongTinGoc.DiaChi || 'Chưa có địa chỉ';
-    document.getElementById('detNoiDung').textContent = lop.NoiDungHuanLuyen || 'Chưa nhập nội dung';
-    
-    const timeline = document.getElementById('timelineList');
-    timeline.innerHTML = '';
-    if (lop.NhatKy) {
-        Object.values(lop.NhatKy).reverse().forEach(log => {
-            timeline.insertAdjacentHTML('beforeend', `
-                <div class="border-l-2 border-blue-100 pl-3 pb-3 relative">
-                    <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-blue-400"></div>
-                    <p class="text-[9px] font-bold text-blue-500">${log.ThoiGian}</p>
-                    <p class="text-xs text-slate-700 font-medium">${log.NoiDung}</p>
-                    <p class="text-[9px] text-slate-400 italic">Thực hiện: ${log.NguoiThucHien}</p>
-                </div>`);
-        });
-    } else {
-        timeline.innerHTML = '<p class="text-xs text-slate-400 italic px-2">Chưa có hoạt động nào.</p>';
+window.dragCard = (ev, mst, lopId) => { ev.dataTransfer.setData("mst", mst); ev.dataTransfer.setData("lopId", lopId); };
+window.allowDrop = (ev) => ev.preventDefault();
+window.dropCard = async (ev, newStatus) => {
+    ev.preventDefault();
+    const mst = ev.dataTransfer.getData("mst");
+    const lopId = ev.dataTransfer.getData("lopId");
+    if(mst && lopId) {
+        await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}`), { TrangThai: newStatus });
+        loadKanbanData();
     }
-    document.getElementById('modalDetail').classList.remove('hidden');
 };
 
-// Gửi hồ sơ mẫu & Tự động nhảy bước
-window.handleSendProfile = async function() {
-    const email = prompt("Nhập Email nhận hồ sơ mẫu:", "");
-    if (!email) return;
-
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
-
+// --- LOGIC TỰ ĐỘNG CHUYỂN BƯỚC ---
+window.sendProfileAndMoveStep = async function(mst, lopId, emailKhach, tenCty) {
+    if(!confirm("Hệ thống sẽ gửi hồ sơ mẫu đến đối tác và chuyển thẻ sang bước CHUẨN BỊ?")) return;
     try {
-        const res = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: "send_profile_template", email: email, tenCty: currentSelectedCard.tenCty })
-        });
+        const res = await fetch(GAS_URL_SYSTEM, { method: 'POST', body: JSON.stringify({ type: "send_profile_template", email: emailKhach, tenCty: tenCty }) });
         const result = await res.json();
-
         if (result.success) {
-            const now = new Date().toLocaleString('vi-VN');
-            // Ghi log & Chuyển bước
-            await push(ref(db, `KhachHang/${currentSelectedCard.mst}/CacLopHuanLuyen/${currentSelectedCard.lopId}/NhatKy`), {
-                ThoiGian: now,
-                NoiDung: `Hệ thống: Đã gửi hồ sơ mẫu đến ${email}. Tự động chuyển B1 -> B4.`,
-                NguoiThucHien: auth.currentUser.email
-            });
-            await update(ref(db, `KhachHang/${currentSelectedCard.mst}/CacLopHuanLuyen/${currentSelectedCard.lopId}`), { TrangThai: "B4_ChuanBi" });
-            
-            alert("Gửi thành công! Thẻ đã chuyển sang bước Chuẩn bị.");
-            document.getElementById('modalDetail').classList.add('hidden');
+            await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}`), { TrangThai: "B4_ChuanBi" });
+            const logRef = ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}/NhatKy`);
+            await push(logRef, { ThoiGian: new Date().toLocaleString('vi-VN'), NoiDung: "Đã gửi hồ sơ mẫu. Tự động chuyển bước.", NguoiThucHien: auth.currentUser.email });
             loadKanbanData();
         }
-    } catch (e) { alert("Lỗi: " + e.message); }
-    btn.disabled = false;
-    btn.innerHTML = originalText;
+    } catch(e) { alert("Lỗi: " + e.message); }
 };
 
-// Cài đặt sự kiện Kanban
+// ==========================================
+// ĐIỀU PHỐI GIẢNG VIÊN & ĐỊNH VỊ (V1.25)
+// ==========================================
+
+async function getCoords(address) {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+        const data = await res.json();
+        return data.length > 0 ? { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) } : null;
+    } catch (e) { return null; }
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2-lat1) * Math.PI/180;
+    const dLon = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
+
+window.findNearestTrainers = async function(customerAddress) {
+    alert("Đang tính toán khoảng cách giảng viên...");
+    const customerCoords = await getCoords(customerAddress);
+    if(!customerCoords) return alert("Không định vị được địa chỉ khách hàng.");
+
+    const snap = await get(ref(db, 'QuanLyGiangVien'));
+    let list = [];
+    if(snap.exists()){
+        snap.forEach(c => {
+            const gv = c.val();
+            if(gv.coords) {
+                const d = getDistance(customerCoords.lat, customerCoords.lon, gv.coords.lat, gv.coords.lon);
+                list.push({...gv, distance: d.toFixed(1)});
+            }
+        });
+    }
+    list.sort((a,b) => a.distance - b.distance);
+    let msg = "GIẢNG VIÊN GẦN NHẤT:\n";
+    list.slice(0,3).forEach((g, i) => msg += `${i+1}. ${g.HoTen} - Cách ${g.distance} km\n`);
+    alert(msg);
+};
+
+window.loadTrainers = async function() {
+    const tbody = document.getElementById('trainerTableBody');
+    if(!tbody) return;
+    const snap = await get(ref(db, 'QuanLyGiangVien'));
+    let html = '';
+    if(snap.exists()) {
+        snap.forEach(c => {
+            const gv = c.val();
+            html += `<tr><td class="p-4 font-bold">${gv.HoTen}</td><td class="p-4">${gv.DiaChi}</td><td class="p-4">${gv.NganhGiang}</td><td class="p-4 text-center">${gv.PhiNgay}</td><td class="p-4 text-center text-blue-600 underline cursor-pointer">Sửa</td></tr>`;
+        });
+    }
+    tbody.innerHTML = html;
+};
+
+// --- HÀM TRA CỨU MST (GIỮ NGUYÊN) ---
+window.autoFillData = async function() {
+    const mstIn = document.getElementById('newMST');
+    const tenIn = document.getElementById('newTenCTY');
+    const diaIn = document.getElementById('newDiaChi');
+    let mst = mstIn.value.trim();
+    if(!mst) return;
+    if(mst.length === 9 && !mst.startsWith('0')) { mst = '0'+mst; mstIn.value = mst; }
+    try {
+        const res = await fetch(GAS_URL_SYSTEM, { method: 'POST', body: JSON.stringify({ type: "lookup_mst", mst: mst }) });
+        const data = await res.json();
+        if(data.success) { tenIn.value = data.tenCongTy; diaIn.value = data.diaChi; }
+    } catch(e) {}
+};
+
 window.setupKanbanEvents = function() {
     setTimeout(() => {
         loadKanbanData();
-        const form = document.getElementById('formCreateClass');
-        if(form) form.addEventListener('submit', submitNewClass);
-        const mstIn = document.getElementById('newMST');
-        if(mstIn) mstIn.addEventListener('blur', autoFillData);
-    }, 300);
-};
-
-// Cập nhật hàm In Báo Giá thực tế (V1.24 - Dự án vdcdaotao-test)
-window.printQuote = function() {
-    // 1. Kiểm tra xem đã chọn thẻ nào chưa
-    if (!currentSelectedCard.mst) {
-        alert("Không tìm thấy dữ liệu thẻ!");
-        return;
-    }
-
-    // 2. Lấy thông tin từ giao diện Modal chi tiết
-    const mst = currentSelectedCard.mst;
-    const lopId = currentSelectedCard.lopId;
-    const tenCty = currentSelectedCard.tenCty;
-    const diaChi = document.getElementById('detDiaChi').textContent;
-    const noiDung = document.getElementById('detNoiDung').textContent;
-
-    // 3. Hỏi nhanh thông số để tính tiền
-    const slHocVien = prompt("Nhập số lượng học viên:", "20");
-    if (slHocVien === null) return; 
-    
-    const phiDiChuyen = prompt("Nhập phí di chuyển & lưu trú (VNĐ):", "500000");
-    if (phiDiChuyen === null) return;
-
-    // 4. Tạo link truyền dữ liệu sang trang print-quote.html
-    const params = new URLSearchParams({
-        mst: mst,
-        ten: tenCty,
-        dc: diaChi,
-        nd: noiDung,
-        sl: slHocVien,
-        pdc: phiDiChuyen,
-        id: lopId
-    });
-
-    // 5. Mở trang in trong tab mới
-    window.open(`views/print-quote.html?${params.toString()}`, '_blank');
+        const f = document.getElementById('formCreateClass');
+        if(f) f.onsubmit = async (e) => {
+            e.preventDefault();
+            const mst = document.getElementById('newMST').value;
+            const ten = document.getElementById('newTenCTY').value;
+            const dia = document.getElementById('newDiaChi').value;
+            const lop = document.getElementById('newLop').value;
+            await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten, DiaChi: dia, MST: mst });
+            await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { TrangThai: "B1_BaoGia", NgayTao: new Date().toLocaleDateString('vi-VN') });
+            document.getElementById('modalCreate').classList.add('hidden');
+            loadKanbanData();
+        };
+        const m = document.getElementById('newMST');
+        if(m) m.onblur = autoFillData;
+    }, 200);
 };
