@@ -1,26 +1,71 @@
-<aside class="w-64 bg-slate-800 text-white shadow-xl h-full flex flex-col transition-all duration-300">
-    <div class="h-16 flex items-center justify-center border-b border-slate-700 bg-slate-900 shadow-inner">
-        <h1 class="text-xl font-bold text-blue-400 tracking-wider"><i class="fa-solid fa-shield-halved mr-2"></i>VDC TEST</h1>
+<div class="flex flex-col h-full bg-slate-800 text-slate-300 w-64 shadow-xl">
+    <!-- Logo & Brand -->
+    <div class="p-6 border-b border-slate-700 flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
+            <span class="text-white font-black text-xl italic">VDC</span>
+        </div>
+        <div>
+            <h1 class="text-white font-bold text-sm tracking-tight leading-none uppercase">Hệ Thống Đào Tạo</h1>
+            <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Management v1.25</p>
+        </div>
     </div>
-    
-    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-3 mb-2 mt-2">Bảng điều khiển</p>
-        <a href="#" onclick="loadView('views/dashboard.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group">
-            <i class="fa-solid fa-chart-pie w-5 group-hover:text-blue-400 transition-colors"></i> Tổng quan
-        </a>
 
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-3 mb-2 mt-6">Quản lý luồng (B1-B6)</p>
-        <a href="#" onclick="loadView('views/kanban.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md">
-            <i class="fa-solid fa-bars-progress w-5"></i> Bảng kéo thả Kanban
-        </a>
-
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-3 mb-2 mt-6">Hệ thống</p>
-        <a href="#" onclick="loadView('views/table.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group">
-            <i class="fa-solid fa-building w-5 group-hover:text-blue-400 transition-colors"></i> Dữ liệu Công ty
-        </a>
+    <!-- Navigation Menu -->
+    <nav class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
         
-        <a href="#" id="menuAdminUsers" onclick="loadView('views/admin-users.html')" class="hidden items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors group border border-slate-600 mt-2 bg-slate-900/50">
-            <i class="fa-solid fa-users-gear w-5 group-hover:text-amber-400 text-amber-500 transition-colors"></i> Quản lý Tài khoản
+        <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Tiến độ công việc</p>
+        
+        <a href="#" onclick="loadView('views/kanban.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all group active">
+            <i class="fa-solid fa-layer-group w-5 group-hover:text-blue-400 transition-colors"></i>
+            <span class="text-sm font-medium">Bảng Kanban</span>
         </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all group">
+            <i class="fa-solid fa-list-check w-5 group-hover:text-green-400 transition-colors"></i>
+            <span class="text-sm font-medium">Danh sách lớp học</span>
+        </a>
+
+        <div class="pt-4"></div>
+        <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Nguồn lực đào tạo</p>
+
+        <!-- MENU GIẢNG VIÊN MỚI -->
+        <a href="#" onclick="loadView('views/admin-trainers.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all group">
+            <i class="fa-solid fa-chalkboard-user w-5 group-hover:text-amber-400 transition-colors"></i>
+            <span class="text-sm font-medium">Mạng lưới Giảng viên</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all group">
+            <i class="fa-solid fa-building-user w-5 group-hover:text-indigo-400 transition-colors"></i>
+            <span class="text-sm font-medium">Đối tác & Khách hàng</span>
+        </a>
+
+        <!-- Menu Admin: Chỉ hiện nếu là quyền Admin (Logic trong main.js kiểm soát) -->
+        <div id="menuAdminUsers" class="hidden flex-col pt-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Quản trị hệ thống</p>
+            <a href="#" onclick="loadView('views/admin-users.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all group">
+                <i class="fa-solid fa-user-gear w-5 group-hover:text-red-400 transition-colors"></i>
+                <span class="text-sm font-medium">Quản lý tài khoản</span>
+            </a>
+        </div>
     </nav>
-</aside>
+
+    <!-- Footer Sidebar -->
+    <div class="p-4 border-t border-slate-700 bg-slate-900/30">
+        <div class="flex items-center gap-3 px-2">
+            <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-[10px] font-bold text-white border border-slate-500">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="overflow-hidden">
+                <p id="userEmailDisplay" class="text-xs font-medium text-white truncate italic">Đang tải...</p>
+                <button id="btnLogout" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-tighter">Đăng xuất</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+</style>
