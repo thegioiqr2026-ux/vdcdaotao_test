@@ -1,32 +1,40 @@
-// Phiên bản: 1.5
-// Cấu hình Firebase cho dự án TEST (vdcdaotao-test)
+// Phiên bản: 1.23
+// Cấu hình kết nối Firebase Tập trung cho Hệ thống VDC
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, get, child, update, set, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyALs7Rj4nJSkckG5isxO2mTD44iO-MGnqQ",
-  authDomain: "vdcdaotao-test.firebaseapp.com",
-  databaseURL: "https://vdcdaotao-test-default-rtdb.firebaseio.com", 
-  projectId: "vdcdaotao-test",
-  storageBucket: "vdcdaotao-test.firebasestorage.app",
-  messagingSenderId: "856216960118",
-  appId: "1:856216960118:web:6c2f9731ab13e686f1f357",
-  measurementId: "G-6FKBY8V855"
+// Cấu hình Firebase của anh Công Đẹp
+const firebaseConfig = { 
+    apiKey: "AIzaSyCzWjfcD5Dgq7V-i2izb9tKLR6QM6qWPQo", 
+    authDomain: "tavietnam-78ae8.firebaseapp.com", 
+    projectId: "tavietnam-78ae8", 
+    storageBucket: "tavietnam-78ae8.firebasestorage.app", 
+    messagingSenderId: "670121705534", 
+    appId: "1:670121705534:web:1027ad98550573ad37116f" 
 };
 
-// Khởi tạo ứng dụng
+// Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getDatabase(app);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-// Xuất các hàm cần thiết để các file HTML khác sử dụng
+// Xuất các biến và hàm cần thiết để các file JS khác sử dụng
 export { 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    sendPasswordResetEmail, 
+    auth, 
+    db, 
+    // Các hàm Authentication
     onAuthStateChanged, 
     signOut, 
-    ref, set, get, child, update 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    // Các hàm Realtime Database
+    ref, 
+    get, 
+    child, 
+    update, 
+    set, 
+    push, // Quan trọng: Dùng để tạo Nhật ký Timeline
+    remove 
 };
