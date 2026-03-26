@@ -1,5 +1,5 @@
-// Phiên bản: 1.25
-// Chức năng: Kanban, Tra cứu MST, Tự động chuyển bước, Quản lý & Định vị Giảng viên gần nhất
+// Phiên bản: 1.26
+// Chức năng: Kanban, Tra cứu MST, Chống trùng lặp đơn hàng, Quản lý & Định vị Giảng viên
 
 import { auth, db, onAuthStateChanged, signOut, ref, get, child, update, push } from './firebase-config.js';
 
@@ -45,7 +45,7 @@ window.loadView = async function(viewFile) {
 };
 
 // ==========================================
-// LOGIC KANBAN & TỰ ĐỘNG HÓA (V1.25)
+// LOGIC KANBAN & KIỂM TRA TRÙNG LẶP (V1.26)
 // ==========================================
 
 window.loadKanbanData = async function() {
@@ -67,8 +67,9 @@ window.loadKanbanData = async function() {
                                 <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">${mst}</span>
                                 <span class="text-[9px] text-gray-400">${lopId}</span>
                             </div>
-                            <h3 class="font-bold text-gray-800 text-xs mb-1 uppercase">${khData.ThongTinGoc?.TenCongTy || "N/A"}</h3>
+                            <h3 class="font-bold text-gray-800 text-[11px] mb-1 uppercase line-clamp-2">${khData.ThongTinGoc?.TenCongTy || "N/A"}</h3>
                             <p class="text-[10px] text-gray-500 line-clamp-1 mb-2 italic"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>${khData.ThongTinGoc?.DiaChi || "Chưa có địa chỉ"}</p>
+                            <p class="text-[10px] text-slate-600 bg-slate-50 p-1.5 rounded mb-2 border border-slate-100 line-clamp-2">${lopData.NoiDungHuanLuyen || 'Chưa nhập nội dung'}</p>
                             ${status === 'B1_BaoGia' ? `<button onclick="sendProfileAndMoveStep('${mst}', '${lopId}', 'khachhang@email.com', '${khData.ThongTinGoc?.TenCongTy}')" class="w-full mt-2 py-1 text-[10px] bg-green-500 text-white rounded hover:bg-green-600 font-bold transition-all"><i class="fa-solid fa-paper-plane mr-1"></i> GỬI HỒ SƠ MẪU</button>` : ''}
                             ${status === 'B4_ChuanBi' ? `<button onclick="findNearestTrainers('${khData.ThongTinGoc?.DiaChi}')" class="w-full mt-2 py-1 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 font-bold transition-all"><i class="fa-solid fa-user-tie mr-1"></i> CHỌN GIẢNG VIÊN GẦN NHẤT</button>` : ''}
                         </div>`;
@@ -92,23 +93,77 @@ window.dropCard = async (ev, newStatus) => {
     }
 };
 
-// --- LOGIC TỰ ĐỘNG CHUYỂN BƯỚC ---
+// --- LOGIC GỬI HỒ SƠ & CHUYỂN BƯỚC ---
 window.sendProfileAndMoveStep = async function(mst, lopId, emailKhach, tenCty) {
-    if(!confirm("Hệ thống sẽ gửi hồ sơ mẫu đến đối tác và chuyển thẻ sang bước CHUẨN BỊ?")) return;
+    if(!confirm("Gửi hồ sơ mẫu và chuyển thẻ sang bước CHUẨN BỊ?")) return;
     try {
         const res = await fetch(GAS_URL_SYSTEM, { method: 'POST', body: JSON.stringify({ type: "send_profile_template", email: emailKhach, tenCty: tenCty }) });
         const result = await res.json();
         if (result.success) {
             await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}`), { TrangThai: "B4_ChuanBi" });
-            const logRef = ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}/NhatKy`);
-            await push(logRef, { ThoiGian: new Date().toLocaleString('vi-VN'), NoiDung: "Đã gửi hồ sơ mẫu. Tự động chuyển bước.", NguoiThucHien: auth.currentUser.email });
+            await push(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lopId}/NhatKy`), { 
+                ThoiGian: new Date().toLocaleString('vi-VN'), 
+                NoiDung: "Hệ thống: Đã gửi hồ sơ mẫu & Tự động chuyển bước.", 
+                NguoiThucHien: auth.currentUser.email 
+            });
             loadKanbanData();
         }
     } catch(e) { alert("Lỗi: " + e.message); }
 };
 
 // ==========================================
-// ĐIỀU PHỐI GIẢNG VIÊN & ĐỊNH VỊ (V1.25)
+// HÀM QUAN TRỌNG: KIỂM TRA TRÙNG LẶP (DUPLICATION CHECK)
+// ==========================================
+async function checkDuplicateOrder(mst, noiDungMoi) {
+    const snapshot = await get(ref(db, `KhachHang/${mst}/CacLopHuanLuyen`));
+    if (snapshot.exists()) {
+        const cacLop = snapshot.val();
+        for (let id in cacLop) {
+            // Kiểm tra nếu nội dung mới giống hệt nội dung đã tồn tại (không phân biệt hoa thường)
+            if (cacLop[id].NoiDungHuanLuyen?.toLowerCase().trim() === noiDungMoi.toLowerCase().trim()) {
+                return true; // Phát hiện trùng
+            }
+        }
+    }
+    return false;
+}
+
+window.submitNewClass = async function(ev) {
+    ev.preventDefault();
+    const btn = document.getElementById('btnSubmitCreate');
+    const mst = document.getElementById('newMST').value.trim();
+    const ten = document.getElementById('newTenCTY').value.trim();
+    const dia = document.getElementById('newDiaChi').value.trim();
+    const lop = document.getElementById('newLop').value.trim();
+    const noidung = document.getElementById('newNoiDung').value.trim();
+
+    // BƯỚC KIỂM TRA TRÙNG
+    const isDuplicate = await checkDuplicateOrder(mst, noidung);
+    if (isDuplicate) {
+        alert(`⚠️ CẢNH BÁO TRÙNG ĐƠN:\nCông ty này đã có một lớp với nội dung tương tự: "${noidung}".\nVui lòng kiểm tra lại để tránh lên đơn trùng lặp!`);
+        return; // Dừng xử lý, không cho lưu
+    }
+
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    try {
+        await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten, DiaChi: dia, MST: mst });
+        await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { 
+            TrangThai: "B1_BaoGia", 
+            NgayTao: new Date().toLocaleDateString('vi-VN'),
+            NoiDungHuanLuyen: noidung
+        });
+        document.getElementById('modalCreate').classList.add('hidden');
+        document.getElementById('formCreateClass').reset();
+        loadKanbanData();
+    } catch(err) { alert(err.message); }
+    btn.innerHTML = 'Tạo mới';
+    btn.disabled = false;
+};
+
+// ==========================================
+// QUẢN LÝ GIẢNG VIÊN & ĐỊNH VỊ (V1.26)
 // ==========================================
 
 async function getCoords(address) {
@@ -128,7 +183,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 window.findNearestTrainers = async function(customerAddress) {
-    alert("Đang tính toán khoảng cách giảng viên...");
+    alert("Đang định vị và tính khoảng cách...");
     const customerCoords = await getCoords(customerAddress);
     if(!customerCoords) return alert("Không định vị được địa chỉ khách hàng.");
 
@@ -144,8 +199,8 @@ window.findNearestTrainers = async function(customerAddress) {
         });
     }
     list.sort((a,b) => a.distance - b.distance);
-    let msg = "GIẢNG VIÊN GẦN NHẤT:\n";
-    list.slice(0,3).forEach((g, i) => msg += `${i+1}. ${g.HoTen} - Cách ${g.distance} km\n`);
+    let msg = "TOP 3 GIẢNG VIÊN GẦN NHẤT:\n";
+    list.slice(0,3).forEach((g, i) => msg += `${i+1}. ${g.HoTen} (${g.distance} km)\n`);
     alert(msg);
 };
 
@@ -157,13 +212,13 @@ window.loadTrainers = async function() {
     if(snap.exists()) {
         snap.forEach(c => {
             const gv = c.val();
-            html += `<tr><td class="p-4 font-bold">${gv.HoTen}</td><td class="p-4">${gv.DiaChi}</td><td class="p-4">${gv.NganhGiang}</td><td class="p-4 text-center">${gv.PhiNgay}</td><td class="p-4 text-center text-blue-600 underline cursor-pointer">Sửa</td></tr>`;
+            html += `<tr class="border-b hover:bg-slate-50"><td class="p-4 font-bold text-blue-700">${gv.HoTen}</td><td class="p-4 text-xs">${gv.DiaChi}</td><td class="p-4">${gv.NganhGiang}</td><td class="p-4 text-center">${gv.PhiNgay}</td><td class="p-4 text-center font-bold text-amber-600">${gv.DiemUuTien}/10</td></tr>`;
         });
     }
     tbody.innerHTML = html;
 };
 
-// --- HÀM TRA CỨU MST (GIỮ NGUYÊN) ---
+// --- TRA CỨU MST ---
 window.autoFillData = async function() {
     const mstIn = document.getElementById('newMST');
     const tenIn = document.getElementById('newTenCTY');
@@ -182,18 +237,23 @@ window.setupKanbanEvents = function() {
     setTimeout(() => {
         loadKanbanData();
         const f = document.getElementById('formCreateClass');
-        if(f) f.onsubmit = async (e) => {
-            e.preventDefault();
-            const mst = document.getElementById('newMST').value;
-            const ten = document.getElementById('newTenCTY').value;
-            const dia = document.getElementById('newDiaChi').value;
-            const lop = document.getElementById('newLop').value;
-            await update(ref(db, `KhachHang/${mst}/ThongTinGoc`), { TenCongTy: ten, DiaChi: dia, MST: mst });
-            await update(ref(db, `KhachHang/${mst}/CacLopHuanLuyen/${lop}`), { TrangThai: "B1_BaoGia", NgayTao: new Date().toLocaleDateString('vi-VN') });
-            document.getElementById('modalCreate').classList.add('hidden');
-            loadKanbanData();
-        };
+        if(f) f.addEventListener('submit', submitNewClass);
         const m = document.getElementById('newMST');
         if(m) m.onblur = autoFillData;
     }, 200);
+};
+
+// --- QUẢN LÝ TÀI KHOẢN ---
+window.loadAdminUsers = async function() {
+    const tbody = document.getElementById('userTableBody');
+    if (!tbody) return;
+    const snapshot = await get(child(ref(db), `AccessControl`));
+    if (snapshot.exists()) {
+        let html = '';
+        snapshot.forEach((snap) => {
+            const d = snap.val();
+            html += `<tr class="border-b"><td class="p-4 font-medium">${d.HoTen}</td><td class="p-4">${d.Email}</td><td class="p-4 text-center">${d.Role}</td><td class="p-4 text-center">${d.TrangThai}</td><td class="p-4 text-center"><button class="text-blue-600 underline">Sửa</button></td></tr>`;
+        });
+        tbody.innerHTML = html;
+    }
 };
