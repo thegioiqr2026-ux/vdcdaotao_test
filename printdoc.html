@@ -2,10 +2,9 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Thẻ ATVSLĐ - 9 Thẻ/A4</title>
+    <title>In Thẻ ATVSLĐ - Chuẩn Cấu Trúc</title>
     <script src="./js/exceljs.min.js"></script>
     <style>
-        /* CẤU HÌNH TRANG IN */
         @page { size: A4; margin: 0; }
         @media print {
             .no-print { display: none; }
@@ -14,19 +13,11 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
-        body { font-family: "Times New Roman", Times, serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 20px; background: #f0f2f5; }
+        .no-print { background: white; padding: 20px; border-radius: 8px; margin: 0 auto 20px auto; max-width: 600px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
         
-        /* Giao diện điều khiển */
-        .no-print { 
-            background: white; padding: 20px; border-radius: 8px; 
-            margin: 0 auto 20px auto; max-width: 600px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;
-        }
-        
-        /* Cấu trúc lưới 9 thẻ (3x3) trên A4 */
         .grid-9 { 
-            display: grid; 
-            width: 210mm; height: 297mm; 
+            display: grid; width: 210mm; height: 297mm; 
             grid-template-columns: repeat(3, 62mm); 
             grid-template-rows: repeat(3, 90mm); 
             gap: 5px; margin: 0 auto; background: white;
@@ -34,47 +25,32 @@
         }
 
         .card { 
-            width: 62mm; height: 90mm; 
-            border: 0.1mm solid #ccc; 
-            position: relative; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center;
-            background-size: 100% 100%; /* Dành cho ảnh nền nếu nạp vào */
+            width: 62mm; height: 90mm; border: 0.1mm solid #ccc; 
+            position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+            background-size: 100% 100%; text-align: center;
         }
 
-        /* KHUNG HÌNH THẺ CHUẨN 20x30mm */
-        .photo-box { 
-            width: 20mm; height: 30mm; 
-            border: 0.5px solid #000; 
-            margin-top: 15mm; /* Điều chỉnh vị trí theo phôi */
-            background: #fff;
-        }
+        /* 1. ĐƠN VỊ (Cố định phía trên) */
+        .info-dv { font-size: 9pt; font-weight: bold; text-transform: uppercase; margin-top: 10mm; width: 90%; height: 35px; }
 
-        /* Co giãn hình không cắt (Stretch) */
-        img.avatar { 
-            width: 100%; height: 100%; 
-            object-fit: fill; 
-        }
+        /* 2. TIÊU ĐỀ (Cố định vị trí) */
+        .info-title { font-size: 10pt; font-weight: bold; color: #003399; margin-top: 5mm; }
 
-        .info-name { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-top: 5px; }
-        .info-cccd { font-size: 10pt; font-weight: bold; }
-        .info-dv { font-size: 8pt; font-weight: bold; padding: 5px; line-height: 1.2; }
+        /* 3. HÌNH ẢNH (20x30mm cố định giữa thẻ) */
+        .photo-box { width: 20mm; height: 30mm; border: 0.5px solid #000; margin-top: 5mm; background: #fff; }
+        img.avatar { width: 100%; height: 100%; object-fit: fill; }
+
+        /* 4. MÃ SỐ THẺ (Dưới cùng) */
+        .info-code { font-size: 10pt; font-weight: bold; margin-top: 10mm; }
 
         button { padding: 10px 20px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; background: #28a745; color: white; }
-        #status { margin-top: 10px; font-weight: bold; color: blue; }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <h2>Hệ Thống In 9 Thẻ ATVSLĐ</h2>
-    <div style="margin-bottom: 15px;">
-        <label>Chọn ảnh nền phôi (nếu cần):</label><br>
-        <input type="file" id="bgInput" accept="image/*" onchange="readBG(this)">
-    </div>
-    <div style="margin-bottom: 15px;">
-        <label>Chọn file Excel dữ liệu:</label><br>
-        <input type="file" id="excelInput" accept=".xlsx">
-    </div>
+    <h2>In Thẻ ATVSLĐ - Cấu Trúc A3 & Cột I</h2>
+    <input type="file" id="excelInput" accept=".xlsx">
     <button onclick="runProcess()">🚀 XỬ LÝ DỮ LIỆU</button>
     <button style="background:#007bff;" onclick="window.print()">🖨️ IN THẺ</button>
     <div id="status"></div>
@@ -83,29 +59,27 @@
 <div id="printArea"></div>
 
 <script>
-    let bgBase64 = "";
-
-    function readBG(i) {
-        const r = new FileReader();
-        r.onload = (e) => { bgBase64 = e.target.result; alert("Đã nạp phôi nền!"); };
-        r.readAsDataURL(i.files[0]);
-    }
-
     async function runProcess() {
         const file = document.getElementById('excelInput').files[0];
-        if (!file) return alert("Vui lòng chọn file Excel!");
+        if (!file) return alert("Chọn Excel!");
         
-        const status = document.getElementById('status');
         const area = document.getElementById('printArea');
         area.innerHTML = "";
-        status.innerText = "⏳ Đang xử lý...";
-
+        
         try {
             const wb = new ExcelJS.Workbook();
             await wb.xlsx.load(await file.arrayBuffer());
             const sh = wb.worksheets[0];
 
-            // Lấy ảnh từ cột I (index 8)
+            // A. Lấy tên đơn vị cố định tại ô A3 và lọc chữ "Công ty:" 
+            let rawDV = sh.getCell('A3').text || "";
+            let cleanDV = rawDV.replace(/Công ty[:\s]*/gi, "").trim();
+
+            // B. Tạo tên viết tắt từ đơn vị (Ví dụ: "Điện Lực" -> "DL")
+            let shortName = cleanDV.split(/\s+/).map(word => word[0]).join('').toUpperCase();
+            let currentYear = new Date().getFullYear();
+
+            // C. Lấy ảnh nhân viên tại cột I (index 8) 
             const imgMap = {};
             sh.getImages().forEach(img => {
                 if (img.range.tl.nativeCol === 8) {
@@ -114,42 +88,37 @@
                 }
             });
 
-            let data = [];
-            let group = "";
+            // D. Trích xuất danh sách học viên (dòng 10 trở đi) 
+            let students = [];
+            let count = 1;
             sh.eachRow((row, i) => {
-                if (i >= 10) { // Đọc từ dòng 10
-                    const dv = row.getCell(1).text.trim();
-                    const ten = row.getCell(2).text.trim();
-                    const cccd = row.getCell(3).text.trim();
-                    if (dv && !ten) group = dv;
-                    else if (ten) data.push({ dv: group, ten: ten, cccd: cccd, img: imgMap[i-1] || "" });
+                if (i >= 10 && row.getCell(2).text) {
+                    students.push({
+                        ten: row.getCell(2).text.trim(),
+                        img: imgMap[i-1] || "",
+                        code: `Số: ${count++}/${currentYear}/${shortName}`
+                    });
                 }
             });
 
-            // Chia nhóm 9 người/trang
-            for (let i = 0; i < data.length; i += 9) {
-                const chunk = data.slice(i, i + 9);
+            // E. Dàn trang 9 thẻ
+            for (let i = 0; i < students.length; i += 9) {
+                const chunk = students.slice(i, i + 9);
                 const page = document.createElement('div');
                 page.className = "grid-9 page-break";
-                
                 chunk.forEach(s => {
                     page.innerHTML += `
-                        <div class="card" style="background-image: url('${bgBase64}')">
-                            <div class="info-dv">${s.dv}</div>
-                            <div style="font-weight:bold; font-size:9pt; margin-top:2px;">THẺ AN TOÀN LAO ĐỘNG</div>
-                            <div class="photo-box">
-                                ${s.img ? `<img class="avatar" src="${s.img}">` : ''}
-                            </div>
-                            <div class="info-name">${s.ten}</div>
-                            <div class="info-cccd">Số: ${s.cccd}</div>
+                        <div class="card">
+                            <div class="info-dv">${cleanDV}</div>
+                            <div class="info-title">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
+                            <div class="photo-box">${s.img ? `<img class="avatar" src="${s.img}">` : ''}</div>
+                            <div class="info-code">${s.code}</div>
                         </div>`;
                 });
                 area.appendChild(page);
             }
-            status.innerText = `✅ Đã xử lý ${data.length} thẻ.`;
-        } catch (e) {
-            status.innerText = "❌ Lỗi: " + e.message;
-        }
+            document.getElementById('status').innerText = `✅ Đã xử lý ${students.length} thẻ.`;
+        } catch (e) { alert("Lỗi: " + e.message); }
     }
 </script>
 </body>
