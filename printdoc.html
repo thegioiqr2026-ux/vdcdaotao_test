@@ -2,69 +2,76 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Quản Lý In Ấn v1.7</title>
+    <title>Trung Tâm Điều Khiển In v1.7</title>
     <script src="./js/exceljs.min.js"></script>
     <style>
-        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 40px; }
-        .main-panel { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 40px; display: flex; justify-content: center; }
+        .main-panel { background: white; width: 100%; max-width: 550px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .header { text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 25px; }
         .control-group { margin-bottom: 20px; }
         label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; }
-        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn-run { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        .btn-run:hover { background: #218838; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        .btn-run { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn-run:hover { background: #218838; transform: translateY(-1px); }
         #status { margin-top: 20px; text-align: center; font-weight: bold; color: #007bff; }
-        .footer { font-size: 11px; color: #888; text-align: center; margin-top: 20px; }
+        .footer { font-size: 11px; color: #888; text-align: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="main-panel">
     <div class="header">
-        <h2>TRUNG TÂM ĐIỀU KHIỂN IN</h2>
+        <h2 style="margin:0;">HỆ THỐNG IN BIỂU MẪU</h2>
     </div>
 
     <div class="control-group">
-        <label>1. Chọn mẫu in (trong /doctemplate/):</label>
+        <label>1. Chọn mẫu biểu mẫu:</label>
         <select id="templatePath">
-            <option value="./doctemplate/printThe44.html">Mẫu Thẻ ATVSLĐ (Nghị định 44)</option>
-            <option value="./doctemplate/printThe62.html">Mẫu Thẻ An Toàn Điện (Nghị định 62)</option>
+            <option value="./doctemplate/printThe44.html">Thẻ ATVSLĐ (9 thẻ/A4 - NĐ44)</option>
+            <option value="./doctemplate/printThe62.html">Thẻ An Toàn Điện (8 thẻ/A4 - NĐ62)</option>
         </select>
     </div>
 
     <div class="control-group">
-        <label>2. Nạp dữ liệu Excel:</label>
+        <label>2. Chọn dữ liệu Excel:</label>
         <input type="file" id="excelInput" accept=".xlsx">
     </div>
 
-    <button class="btn-run" onclick="startPrinting()">🚀 XỬ LÝ & MỞ TRANG IN</button>
+    <button class="btn-run" onclick="startProcessing()">🚀 XỬ LÝ & CHUYỂN TRANG IN</button>
     
     <div id="status"></div>
-    <div class="footer">Phiên bản 1.7 | Hệ thống điều hướng biểu mẫu</div>
+    <div class="footer">Phiên bản 1.7 | Quản lý biểu mẫu tập trung</div>
 </div>
 
 <script>
-    function startPrinting() {
+    async function startProcessing() {
         const file = document.getElementById('excelInput').files[0];
         const template = document.getElementById('templatePath').value;
         const status = document.getElementById('status');
 
-        if (!file) return alert("Vui lòng chọn file Excel trước!");
+        if (!file) return alert("Bạn chưa chọn file Excel dữ liệu!");
 
-        status.innerText = "⏳ Đang chuyển dữ liệu...";
+        status.innerText = "⏳ Đang chuẩn bị dữ liệu...";
 
-        // Đọc file dưới dạng ArrayBuffer để truyền qua sessionStorage
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                // Lưu dữ liệu vào bộ nhớ đệm trình duyệt để trang biểu mẫu lấy ra dùng
-                const base64Data = btoa(new Uint8Array(e.target.result).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+                // Chuyển đổi dữ liệu ArrayBuffer sang Base64 để lưu vào sessionStorage
+                const uint8 = new Uint8Array(e.target.result);
+                let binary = "";
+                for (let i = 0; i < uint8.length; i++) {
+                    binary += String.fromCharCode(uint8[i]);
+                }
+                const base64Data = btoa(binary);
+                
+                // Lưu dữ liệu vào bộ nhớ đệm
                 sessionStorage.setItem('excel_data_buffer', base64Data);
                 
-                // Mở trang biểu mẫu trong tab mới hoặc chính trang này
+                // Điều hướng sang trang biểu mẫu đã chọn trong /doctemplate/
                 window.location.href = template;
             } catch (err) {
-                alert("Lỗi lưu trữ dữ liệu: " + err.message);
+                console.error(err);
+                alert("Lỗi khi đóng gói dữ liệu: " + err.message);
             }
         };
         reader.readAsArrayBuffer(file);
