@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống In Thẻ ATVSLĐ v1.5</title>
+    <title>In Thẻ ATVSLĐ (NĐ44) v1.6</title>
     <script src="./js/exceljs.min.js"></script>
     <style>
         @page { size: A4; margin: 0; }
@@ -10,17 +10,45 @@
             .no-print { display: none; }
             body { background: none; margin: 0; padding: 0; }
             .page-break { page-break-after: always; display: block; }
+            /* Cài đặt bắt buộc để trình duyệt in được hình nền */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
+
         body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 20px; background: #f0f2f5; }
         .no-print { background: white; padding: 20px; border-radius: 8px; margin: 0 auto 20px auto; max-width: 700px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
-        .grid-9 { display: grid; width: 210mm; height: 297mm; grid-template-columns: repeat(3, 62mm); grid-template-rows: repeat(3, 90mm); gap: 5px; margin: 0 auto; background: white; justify-content: center; align-content: center; }
-        .card { width: 62mm; height: 90mm; border: 0.1mm solid #ccc; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; background-image: url('./images/backgroundTheATVSLD.png'); background-size: 100% 100%; background-repeat: no-repeat; text-align: center; padding: 5mm 0; }
-        .info-dv { font-size: 9pt; font-weight: bold; text-transform: uppercase; width: 90%; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .info-title { font-size: 10pt; font-weight: bold; color: #003399; margin: 5mm 0; }
-        .photo-box { width: 20mm; height: 30mm; border: 0.5px solid #000; background: #fff; overflow: hidden; }
+        
+        /* Lưới 9 thẻ chuẩn A4 (3x3) */
+        .grid-9 { 
+            display: grid; width: 210mm; height: 297mm; 
+            grid-template-columns: repeat(3, 62mm); 
+            grid-template-rows: repeat(3, 90mm); 
+            gap: 5px; margin: 0 auto; background: white;
+            justify-content: center; align-content: center;
+        }
+
+        .card { 
+            width: 62mm; height: 90mm; border: 0.1mm solid #ccc; 
+            position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+            /* Hình nền mặc định theo yêu cầu */
+            background-image: url('./images/backgroundTheATVSLD.png');
+            background-size: 100% 100%; 
+            background-repeat: no-repeat;
+            text-align: center; padding: 5mm 0;
+        }
+
+        /* 1. Đơn vị trích xuất từ ô A3 (bỏ chữ Công ty:) */
+        .info-dv { font-size: 9pt; font-weight: bold; text-transform: uppercase; width: 90%; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+
+        /* 2. Tiêu đề cố định */
+        .info-title { font-size: 10pt; font-weight: bold; color: #003399; margin: 5mm 0; z-index: 1; }
+
+        /* 3. Hình ảnh nhân viên (20x30mm co giãn vừa khít khung) */
+        .photo-box { width: 20mm; height: 30mm; border: 0.5px solid #000; background: #fff; overflow: hidden; z-index: 1; }
         img.avatar { width: 100%; height: 100%; object-fit: fill; }
-        .info-code { font-size: 10pt; font-weight: bold; margin-top: auto; padding-bottom: 10mm; }
+
+        /* 4. Mã số thẻ (Số/Năm/Viết tắt) */
+        .info-code { font-size: 10pt; font-weight: bold; margin-top: auto; padding-bottom: 10mm; z-index: 1; }
+
         .version-tag { font-size: 10px; color: #888; margin-top: 10px; display: block; }
         button { padding: 10px 20px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; background: #28a745; color: white; margin: 5px; }
     </style>
@@ -28,13 +56,16 @@
 <body>
 
 <div class="no-print">
-    <h2>Hệ Thống In Thẻ ATVSLĐ</h2>
-    <div style="margin: 15px 0;"><input type="file" id="excelInput" accept=".xlsx"></div>
+    <h2>Hệ Thống In Thẻ ATVSLĐ (Nghị định 44)</h2>
+    <div style="margin: 15px 0;">
+        <input type="file" id="excelInput" accept=".xlsx">
+    </div>
     <button onclick="runProcess()">🚀 XỬ LÝ DỮ LIỆU</button>
     <button style="background:#007bff;" onclick="window.print()">🖨️ IN THẺ</button>
     <div id="status"></div>
-    <span class="version-tag">Phiên bản hiện tại: 1.5 (Fix Null Error)</span>
+    <span class="version-tag">Phiên bản: 1.6 | File: printThe44.html</span>
 </div>
+
 <div id="printArea"></div>
 
 <script>
@@ -52,14 +83,16 @@
             await wb.xlsx.load(await file.arrayBuffer());
             const sh = wb.worksheets[0];
 
-            // KIỂM TRA Ô A3 (Fix lỗi Null)
+            // Xử lý đơn vị ô A3 (Phòng tránh lỗi Null)
             let cellA3 = sh.getCell('A3').value;
-            let rawDV = cellA3 ? cellA3.toString() : "ĐƠN VỊ CHƯA XÁC ĐỊNH";
+            let rawDV = cellA3 ? cellA3.toString() : "ĐƠN VỊ CHƯA CẬP NHẬT";
             let cleanDV = rawDV.replace(/Công ty[:\s]*/gi, "").trim();
 
+            // Tạo tên viết tắt tự động
             let shortName = cleanDV.split(/\s+/).filter(w => w.length > 0).map(word => word[0]).join('').toUpperCase() || "THE";
             let currentYear = new Date().getFullYear();
 
+            // Bản đồ ảnh từ cột I
             const imgMap = {};
             sh.getImages().forEach(img => {
                 if (img.range.tl.nativeCol === 8) {
@@ -69,23 +102,21 @@
                 }
             });
 
+            // Danh sách học viên từ dòng 10
             let students = [];
             let stt = 1;
             sh.eachRow((row, i) => {
-                if (i >= 10) {
-                    // KIỂM TRA Ô TÊN (Fix lỗi Null dòng trống)
-                    let nameVal = row.getCell(2).value;
-                    if (nameVal) {
-                        students.push({
-                            img: imgMap[i-1] || "",
-                            code: `Số: ${stt++}/${currentYear}/${shortName}`
-                        });
-                    }
+                let nameVal = row.getCell(2).value;
+                if (i >= 10 && nameVal) {
+                    students.push({
+                        img: imgMap[i-1] || "",
+                        code: `Số: ${stt++}/${currentYear}/${shortName}`
+                    });
                 }
             });
 
             if (students.length === 0) {
-                status.innerText = "⚠️ Không tìm thấy dữ liệu học viên từ dòng 10.";
+                status.innerText = "⚠️ Không tìm thấy học viên nào ở dòng 10.";
                 return;
             }
 
@@ -98,7 +129,9 @@
                         <div class="card">
                             <div class="info-dv">${cleanDV}</div>
                             <div class="info-title">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
-                            <div class="photo-box">${s.img ? `<img class="avatar" src="${s.img}">` : ''}</div>
+                            <div class="photo-box">
+                                ${s.img ? `<img class="avatar" src="${s.img}">` : ''}
+                            </div>
                             <div class="info-code">${s.code}</div>
                         </div>`;
                 });
@@ -106,7 +139,6 @@
             }
             status.innerText = `✅ Đã xử lý ${students.length} học viên thành công.`;
         } catch (e) {
-            console.error(e);
             status.innerText = "❌ Lỗi: " + e.message;
         }
     }
