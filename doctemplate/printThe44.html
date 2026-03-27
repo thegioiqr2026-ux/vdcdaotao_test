@@ -2,20 +2,16 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.2</title>
+    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.3</title>
     <script src="../js/exceljs.min.js"></script>
     <style>
         @page { size: A4; margin: 0; }
         @media print {
             .no-print { display: none; }
-            body { background: none; margin: 0; padding: 0; }
+            body { background: none !important; margin: 0; padding: 0; }
             .page-break { page-break-after: always; display: block; }
-            /* LỆNH BẮT BUỘC: Cưỡng ép trình duyệt in hình nền */
-            * { 
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important; 
-                color-adjust: exact !important;
-            }
+            /* Cưỡng ép in đồ họa */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
         
         body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 0; }
@@ -30,12 +26,21 @@
         .card { 
             width: 62mm; height: 90mm; border: 0.1mm solid #ccc; 
             position: relative; display: flex; flex-direction: column; align-items: center;
-            /* ĐẢM BẢO TÊN FILE TRÊN GITHUB PHẢI LÀ: backgroundTheATVSLD.png (đúng từng chữ hoa thường) */
-            background-image: url('backgroundTheATVSLD.png') !important;
-            background-size: 100% 100% !important; 
+            /* Thiết lập khung chứa để hiển thị ảnh nền lớp dưới */
             background-repeat: no-repeat !important;
-            background-position: center !important;
+            background-size: 100% 100% !important;
             text-align: center; padding: 5mm 0; box-sizing: border-box;
+        }
+
+        /* Lớp giả để chứa hình nền cưỡng ép */
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* Thay URL bằng ảnh nền của bạn */
+            background-image: url('backgroundTheATVSLD.png');
+            background-size: 100% 100%;
+            z-index: -1;
         }
 
         .info-dv { font-size: 9pt; font-weight: bold; text-transform: uppercase; width: 90%; height: 40px; display: flex; align-items: center; justify-content: center; }
@@ -59,7 +64,7 @@
 
         window.onload = async function() {
             const dataBase64 = sessionStorage.getItem('excel_data_buffer');
-            if (!dataBase64) return alert("Dữ liệu trống!");
+            if (!dataBase64) return;
 
             try {
                 const binaryString = atob(dataBase64);
@@ -86,10 +91,7 @@
                 sh.eachRow((row, i) => {
                     let name = getSafeText(row.getCell(2));
                     if (i >= 10 && name) {
-                        students.push({ 
-                            img: imgMap[i-1] || "", 
-                            code: `Số: ${stt++}/${currentYear}/${shortName}` 
-                        });
+                        students.push({ img: imgMap[i-1] || "", code: `Số: ${stt++}/${currentYear}/${shortName}` });
                     }
                 });
 
@@ -109,9 +111,9 @@
                     });
                     area.appendChild(page);
                 }
-                // Chờ 1 giây để đảm bảo hình nền tải xong trước khi in
+                // Chờ ảnh nhân viên nạp xong
                 setTimeout(() => { window.print(); }, 1000);
-            } catch (e) { alert("Lỗi: " + e.message); }
+            } catch (e) { console.error(e); }
         };
     </script>
 </body>
