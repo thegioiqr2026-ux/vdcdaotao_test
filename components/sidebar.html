@@ -19,7 +19,15 @@
         <a href="#" onclick="loadView('views/class-list.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
             <i class="fa-solid fa-list-check w-5"></i><span class="text-sm font-medium">Danh sách lớp học</span>
         </a>
-
+        <li class="flex items-center p-3 text-gray-300 hover:bg-slate-800 hover:text-white rounded-lg cursor-pointer transition-all" onclick="loadView('views/loadExcel.html')">
+            <i class="fa-solid fa-users-gear w-6 text-center"></i>
+            <span class="ml-3 font-medium text-sm">Thông tin học viên</span>
+        </li>
+        
+        <li class="flex items-center p-3 text-gray-300 hover:bg-slate-800 hover:text-white rounded-lg cursor-pointer transition-all" onclick="loadView('printdoc.html')">
+            <i class="fa-solid fa-id-card w-6 text-center"></i>
+            <span class="ml-3 font-medium text-sm">In thẻ</span>
+        </li>
         <div class="pt-4"></div>
         <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Nguồn lực đào tạo</p>
         <a href="#" onclick="loadView('views/admin-trainers.html')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
