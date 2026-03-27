@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.1</title>
+    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.2</title>
     <script src="../js/exceljs.min.js"></script>
     <style>
         @page { size: A4; margin: 0; }
@@ -10,10 +10,11 @@
             .no-print { display: none; }
             body { background: none; margin: 0; padding: 0; }
             .page-break { page-break-after: always; display: block; }
-            /* Cưỡng ép in hình nền và màu sắc */
+            /* LỆNH BẮT BUỘC: Cưỡng ép trình duyệt in hình nền */
             * { 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important; 
+                color-adjust: exact !important;
             }
         }
         
@@ -29,10 +30,11 @@
         .card { 
             width: 62mm; height: 90mm; border: 0.1mm solid #ccc; 
             position: relative; display: flex; flex-direction: column; align-items: center;
-            /* ĐÃ CẬP NHẬT: Hình nền nằm cùng thư mục với file html này */
-            background-image: url('./backgroundTheATVSLD.png') !important;
+            /* ĐẢM BẢO TÊN FILE TRÊN GITHUB PHẢI LÀ: backgroundTheATVSLD.png (đúng từng chữ hoa thường) */
+            background-image: url('backgroundTheATVSLD.png') !important;
             background-size: 100% 100% !important; 
             background-repeat: no-repeat !important;
+            background-position: center !important;
             text-align: center; padding: 5mm 0; box-sizing: border-box;
         }
 
@@ -50,18 +52,14 @@
     <div id="printArea"></div>
 
     <script>
-        // Hàm lấy text thuần túy để tránh lỗi [Object Object]
         function getSafeText(cell) {
             if (!cell || cell.value === null) return "";
-            if (typeof cell.value === 'object') {
-                return cell.text || ""; 
-            }
-            return cell.value.toString();
+            return cell.text ? cell.text.toString() : cell.value.toString();
         }
 
         window.onload = async function() {
             const dataBase64 = sessionStorage.getItem('excel_data_buffer');
-            if (!dataBase64) return alert("Không tìm thấy dữ liệu!");
+            if (!dataBase64) return alert("Dữ liệu trống!");
 
             try {
                 const binaryString = atob(dataBase64);
@@ -72,8 +70,8 @@
                 await wb.xlsx.load(bytes.buffer);
                 const sh = wb.worksheets[0];
 
-                // Lấy đơn vị ô A3 sạch lỗi Object
-                let cleanDV = getSafeText(sh.getCell('A3')).replace(/Công ty[:\s]*/gi, "").trim();
+                let rawDV = getSafeText(sh.getCell('A3'));
+                let cleanDV = rawDV.replace(/Công ty[:\s]*/gi, "").trim();
                 let shortName = cleanDV.split(/\s+/).filter(w=>w).map(w=>w[0]).join('').toUpperCase();
                 let currentYear = new Date().getFullYear();
 
@@ -111,7 +109,8 @@
                     });
                     area.appendChild(page);
                 }
-                setTimeout(() => { window.print(); }, 500);
+                // Chờ 1 giây để đảm bảo hình nền tải xong trước khi in
+                setTimeout(() => { window.print(); }, 1000);
             } catch (e) { alert("Lỗi: " + e.message); }
         };
     </script>
