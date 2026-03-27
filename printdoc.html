@@ -2,14 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống In Biểu Mẫu Chuyên Nghiệp - GitHub</title>
-    
+    <title>Hệ Thống In Ấn Chuyên Nghiệp</title>
     <script src="./js/exceljs.min.js"></script>
-    
-    <style id="dynamic-style">
+    <style>
         @page { size: A4; margin: 0; }
         @page cert { size: 130mm 190mm; margin: 0; }
-
         @media print {
             .no-print { display: none; }
             body { background: none; margin: 0; padding: 0; }
@@ -17,181 +14,100 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .is-cert { page: cert; }
         }
-
-        body { font-family: "Times New Roman", Times, serif; background: #f4f7f9; margin: 0; padding: 20px; }
-        .no-print { background: white; padding: 20px; border-radius: 8px; margin: 0 auto 20px auto; max-width: 950px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        .config-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px; }
-        .config-item label { font-size: 11px; font-weight: bold; color: #555; }
-        .config-item input { width: 90%; padding: 5px; }
-
+        body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 20px; background: #f4f7f9; }
+        .no-print { background: white; padding: 20px; border-radius: 8px; margin: 0 auto 20px auto; max-width: 900px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .grid-container { display: grid; margin: 0 auto; background: white; justify-content: center; align-content: center; }
         
-        /* Cấu trúc các loại thẻ dựa trên tùy chỉnh */
-        .card { box-sizing: border-box; position: relative; overflow: hidden; background-size: 100% 100%; border: 0.1mm solid #000; }
-        .photo-box { border: 1px solid #000; margin: 0 auto; background: #fff; display: flex; align-items: center; justify-content: center; }
-        img.avatar { width: 100%; height: 100%; object-fit: cover; }
+        /* Định dạng 3 loại biểu mẫu */
+        .grid-9 { width: 210mm; height: 297mm; grid-template-columns: repeat(3, 62mm); grid-template-rows: repeat(3, 90mm); gap: 5px; }
+        .grid-8 { width: 210mm; height: 297mm; grid-template-columns: repeat(2, 85mm); grid-template-rows: repeat(4, 53mm); gap: 10mm 5mm; }
+        .grid-1 { width: 130mm; height: 190mm; grid-template-columns: 130mm; grid-template-rows: 190mm; }
 
-        button { padding: 10px 15px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; margin-right: 5px; }
+        .card { box-sizing: border-box; position: relative; overflow: hidden; border: 0.1mm solid #000; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .photo-box { border: 1px solid #000; margin: 0 auto; background: #fff; width: 25mm; height: 35mm; overflow: hidden; }
+        img.avatar { width: 100%; height: 100%; object-fit: cover; }
+        .btn-action { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <div style="display: flex; gap: 20px; align-items: flex-end;">
-        <div>
-            <label><b>1. Loại biểu mẫu:</b></label><br>
-            <select id="formType" onchange="loadConfig()" style="padding: 8px; width: 250px;">
-                <option value="9">Thẻ ATVSLĐ Nhóm 3 (9 thẻ/A4)</option>
-                <option value="8">Thẻ An Toàn Điện (8 thẻ/A4 - Phôi 62)</option>
-                <option value="1">Giấy Chứng Nhận (Phôi 13x19cm)</option>
-            </select>
-        </div>
-        <div>
-            <label><b>2. Ảnh nền (Nếu có):</b></label><br>
-            <input type="file" id="bgInput" accept="image/*" onchange="readBG(this)">
-        </div>
-        <div>
-            <label><b>3. File Excel:</b></label><br>
-            <input type="file" id="excelInput" accept=".xlsx">
-        </div>
+    <h2>🛠 CẤU HÌNH IN (GitHub Mode)</h2>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <select id="formType" style="padding: 10px;">
+            <option value="9">Thẻ ATVSLĐ (9 thẻ/A4)</option>
+            <option value="8">Thẻ An Toàn Điện (8 thẻ/A4 - Vàng)</option>
+            <option value="1">Giấy Chứng Nhận (Phôi 13x19cm)</option>
+        </select>
+        <input type="file" id="excelInput" accept=".xlsx">
+        <button class="btn-action" style="background: #28a745; color: white;" onclick="runProcess()">🚀 TRÍCH XUẤT</button>
+        <button class="btn-action" style="background: #007bff; color: white;" onclick="window.print()">🖨️ IN NGAY</button>
     </div>
-
-    <div class="config-grid">
-        <div class="config-item"><label>Rộng (mm):</label><br><input type="number" id="cfgW" step="0.1"></div>
-        <div class="config-item"><label>Cao (mm):</label><br><input type="number" id="cfgH" step="0.1"></div>
-        <div class="config-item"><label>Font Họ Tên (pt):</label><br><input type="number" id="cfgFS"></div>
-        <div class="config-item"><label>Màu nền (Hex):</label><br><input type="color" id="cfgColor"></div>
-        <div class="config-item"><label>Lề trên ảnh (mm):</label><br><input type="number" id="cfgImgT"></div>
-        <div class="config-item"><label>Rộng ảnh (mm):</label><br><input type="number" id="cfgImgW"></div>
-        <div class="config-item"><label>Cao ảnh (mm):</label><br><input type="number" id="cfgImgH"></div>
-    </div>
-
-    <div style="margin-top: 20px;">
-        <button onclick="saveConfig()" style="background: #e67e22; color: white;">💾 LƯU CẤU HÌNH</button>
-        <button onclick="runProcess()" style="background: #28a745; color: white;">🚀 TRÍCH XUẤT DỮ LIỆU</button>
-        <button onclick="window.print()" style="background: #007bff; color: white;">🖨️ IN NGAY</button>
-    </div>
+    <p id="status" style="margin-top: 10px; color: blue; font-weight: bold;"></p>
 </div>
 
 <div id="printArea"></div>
 
 <script>
-    let bgBase64 = "";
-    const KEY = "CONFIG_IN_THE_";
-
-    // Giá trị mặc định cho từng loại
-    const defaults = {
-        "9": { w: 62, h: 90, fs: 12, color: "#ffffff", it: 10, iw: 30, ih: 40 },
-        "8": { w: 85, h: 53, fs: 11, color: "#ffea00", it: 5, iw: 22, ih: 30 },
-        "1": { w: 130, h: 190, fs: 15, color: "#ffffff", it: 20, iw: 30, ih: 40 }
-    };
-
-    function saveConfig() {
-        const type = document.getElementById('formType').value;
-        const cfg = {
-            w: document.getElementById('cfgW').value,
-            h: document.getElementById('cfgH').value,
-            fs: document.getElementById('cfgFS').value,
-            color: document.getElementById('cfgColor').value,
-            it: document.getElementById('cfgImgT').value,
-            iw: document.getElementById('cfgImgW').value,
-            ih: document.getElementById('cfgImgH').value,
-            bg: bgBase64
-        };
-        localStorage.setItem(KEY + type, JSON.stringify(cfg));
-        alert("Đã lưu cấu hình mẫu " + type);
-    }
-
-    function loadConfig() {
-        const type = document.getElementById('formType').value;
-        const saved = localStorage.getItem(KEY + type);
-        const cfg = saved ? JSON.parse(saved) : defaults[type];
-        
-        document.getElementById('cfgW').value = cfg.w;
-        document.getElementById('cfgH').value = cfg.h;
-        document.getElementById('cfgFS').value = cfg.fs;
-        document.getElementById('cfgColor').value = cfg.color;
-        document.getElementById('cfgImgT').value = cfg.it;
-        document.getElementById('cfgImgW').value = cfg.iw;
-        document.getElementById('cfgImgH').value = cfg.ih;
-        if(cfg.bg) bgBase64 = cfg.bg;
-    }
-
-    function readBG(i) {
-        const r = new FileReader();
-        r.onload = (e) => bgBase64 = e.target.result;
-        r.readAsDataURL(i.files[0]);
-    }
-
     async function runProcess() {
         const file = document.getElementById('excelInput').files[0];
         const type = parseInt(document.getElementById('formType').value);
-        if (!file) return alert("Chọn Excel!");
+        const status = document.getElementById('status');
+        if (!file) return alert("Vui lòng chọn file Excel!");
 
-        const cfg = {
-            w: document.getElementById('cfgW').value,
-            h: document.getElementById('cfgH').value,
-            fs: document.getElementById('cfgFS').value,
-            bg: document.getElementById('cfgColor').value,
-            it: document.getElementById('cfgImgT').value,
-            iw: document.getElementById('cfgImgW').value,
-            ih: document.getElementById('cfgImgH').value
-        };
-
+        status.innerText = "⏳ Đang trích xuất...";
         const area = document.getElementById('printArea');
         area.innerHTML = "";
-        const wb = new ExcelJS.Workbook();
-        await wb.xlsx.load(await file.arrayBuffer());
-        const sh = wb.worksheets[0];
 
-        const imgMap = {};
-        sh.getImages().forEach(img => {
-            if (img.range.tl.nativeCol === 8) { // Cột I
-                const blob = new Blob([wb.getImage(img.imageId).buffer]);
-                imgMap[img.range.tl.nativeRow] = URL.createObjectURL(blob);
-            }
-        });
+        try {
+            const wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(await file.arrayBuffer());
+            const sh = wb.worksheets[0];
 
-        let list = []; let grp = "";
-        sh.eachRow((row, i) => {
-            if (i >= 10) {
-                const a = row.getCell(1).text.trim();
-                const b = row.getCell(2).text.trim();
-                const c = row.getCell(3).text.trim();
-                if (a && !b) grp = a;
-                else if (b) list.push({ dv: grp, ten: b, cccd: c, img: imgMap[i-1] || "" });
-            }
-        });
-
-        const step = (type === 1) ? 1 : type;
-        const colCount = (type === 9) ? 3 : (type === 8 ? 2 : 1);
-
-        for (let i = 0; i < list.length; i += step) {
-            const chunk = list.slice(i, i + step);
-            const page = document.createElement('div');
-            page.className = `grid-container page-break ${type === 1 ? 'is-cert' : ''}`;
-            page.style.gridTemplateColumns = `repeat(${colCount}, ${cfg.w}mm)`;
-            
-            chunk.forEach(s => {
-                // Thẻ ATVSLĐ dùng ảnh nền, Thẻ điện/GCN dùng màu nền
-                const styleBg = (type === 9) ? `background-image:url('${bgBase64}')` : `background-color:${cfg.bg}`;
-                
-                page.innerHTML += `
-                    <div class="card" style="width:${cfg.w}mm; height:${cfg.h}mm; ${styleBg}">
-                        <div style="text-align:center; padding-top:5px; font-size:8pt; font-weight:bold;">${s.dv}</div>
-                        <div class="photo-box" style="margin-top:${cfg.it}mm; width:${cfg.iw}mm; height:${cfg.ih}mm;">
-                            ${s.img ? `<img src="${s.img}">` : ''}
-                        </div>
-                        <div style="text-align:center; font-weight:bold; font-size:${cfg.fs}pt; margin-top:5px;">${s.ten}</div>
-                        <div style="text-align:center; font-size:10pt; font-weight:bold;">Số: ${s.cccd}</div>
-                    </div>`;
+            // 1. Lấy ảnh từ cột I (index 8) [cite: 2]
+            const imgMap = {};
+            sh.getImages().forEach(img => {
+                if (img.range.tl.nativeCol === 8) {
+                    const blob = new Blob([wb.getImage(img.imageId).buffer]);
+                    imgMap[img.range.tl.nativeRow] = URL.createObjectURL(blob);
+                }
             });
-            area.appendChild(page);
-        }
-    }
 
-    window.onload = loadConfig;
+            // 2. Đọc dữ liệu từ dòng 10 [cite: 1]
+            let list = []; let grp = "";
+            sh.eachRow((row, i) => {
+                if (i >= 10) {
+                    const a = row.getCell(1).text.trim(); // Cột A: Đơn vị
+                    const b = row.getCell(2).text.trim(); // Cột B: Họ tên
+                    const c = row.getCell(3).text.trim(); // Cột C: CCCD
+                    if (a && !b) grp = a;
+                    else if (b) list.push({ dv: grp, ten: b, cccd: c, img: imgMap[i-1] || "" });
+                }
+            });
+
+            // 3. Dàn trang
+            const step = (type === 1) ? 1 : type;
+            for (let i = 0; i < list.length; i += step) {
+                const chunk = list.slice(i, i + step);
+                const page = document.createElement('div');
+                page.className = `grid-container grid-${type} page-break ${type === 1 ? 'is-cert' : ''}`;
+                
+                chunk.forEach(s => {
+                    const bgColor = (type === 8) ? "#FFEA00" : "#ffffff";
+                    page.innerHTML += `
+                        <div class="card" style="background-color: ${bgColor}">
+                            <div style="font-size: 8pt; font-weight: bold;">${s.dv}</div>
+                            <div style="font-weight: bold; margin: 2px 0;">${type === 1 ? 'GIẤY CHỨNG NHẬN' : 'THẺ AN TOÀN'}</div>
+                            <div class="photo-box">${s.img ? `<img class="avatar" src="${s.img}">` : ''}</div>
+                            <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">${s.ten}</div>
+                            <div style="font-size: 10pt;">Số: ${s.cccd}</div>
+                        </div>`;
+                });
+                area.appendChild(page);
+            }
+            status.innerText = `✅ Đã trích xuất ${list.length} nhân viên.`;
+        } catch (e) { status.innerText = "❌ Lỗi: " + e.message; }
+    }
 </script>
 </body>
 </html>
