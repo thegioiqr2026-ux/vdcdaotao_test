@@ -2,33 +2,34 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Data Center v2.7 - Full Schema</title>
+    <title>VDC Data Center v2.9</title>
     <script src="./js/exceljs.min.js"></script>
     <script src="./js/jszip.min.js"></script>
     <script src="./js/firebase-config.js" type="module"></script>
     <style>
-        /* Giữ nguyên CSS của bản v2.6 và điều chỉnh bảng rộng hơn */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
-        .sidebar { width: 320px; background: #2c3e50; color: white; padding: 20px; overflow-y: auto; }
+        .sidebar { width: 330px; background: #2c3e50; color: white; padding: 20px; overflow-y: auto; }
         .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .table-container { flex: 1; background: white; border-radius: 8px; overflow: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #bdc3c7; }
+        input[type="file"], input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #34495e; color: white; box-sizing: border-box; }
+        .table-container { flex: 1; background: white; border-radius: 8px; overflow: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1500px; }
         th { background: #34495e; color: white; position: sticky; top: 0; padding: 10px; font-size: 12px; }
         td { padding: 8px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px; }
         .preview-img { width: 45px; height: 60px; object-fit: cover; border: 1px solid #ddd; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; color: white; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h2 style="color:#3498db; text-align:center;">VDC CRM</h2>
-    <div style="margin-bottom:15px;"><label>1. EXCEL:</label><input type="file" id="fileExcel" accept=".xlsx"></div>
-    <div style="margin-bottom:15px;"><label>2. ZIP ẢNH:</label><input type="file" id="fileZip" accept=".zip"></div>
-    <div style="background:#1a252f; padding:10px; border-radius:5px;">
-        <label style="color:#f1c40f;">THÔNG TIN ĐƠN VỊ:</label>
-        <input type="text" id="inputMST" placeholder="Mã số thuế..." style="margin-bottom:8px; width:100%;">
-        <input type="text" id="inputTenCty" placeholder="Tên công ty..." style="width:100%;">
+    <h2 style="color:#3498db; text-align:center;">VDC CRM v2.9</h2>
+    <div class="form-group"><label>1. FILE EXCEL:</label><input type="file" id="fileExcel" accept=".xlsx" /></div>
+    <div class="form-group"><label>2. FILE ZIP ẢNH:</label><input type="file" id="fileZip" accept=".zip" /></div>
+    <div style="background: #1a252f; padding: 12px; border-radius: 6px;">
+        <input type="text" id="inputMST" placeholder="Mã số thuế..." style="margin-bottom: 10px;">
+        <input type="text" id="inputTenCty" placeholder="Tên công ty...">
     </div>
     <button class="btn" style="background:#3498db;" onclick="docDuLieuPreview()">🔍 XEM TRƯỚC</button>
     <button id="btnSync" class="btn" style="background:#27ae60; display:none;" onclick="xuatDuLieuLenHethong()">🚀 ĐỒNG BỘ CLOUD</button>
@@ -41,7 +42,7 @@
             <thead>
                 <tr>
                     <th>STT</th><th>Ảnh</th><th>Họ và Tên</th><th>Ngày sinh</th><th>Giới tính</th>
-                    <th>CCCD</th><th>Mã NV</th><th>Quốc tịch</th><th>Nhóm/Đơn vị</th><th>Nội dung HL</th>
+                    <th>CCCD</th><th>Công việc</th><th>Mã NV</th><th>Quốc tịch</th><th>Nhóm</th><th>Nội dung HL</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -59,7 +60,7 @@
     window.docDuLieuPreview = async function() {
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
-        if (!fileEx) return alert("Chưa chọn file!");
+        if (!fileEx) return alert("Chưa chọn file Excel!");
 
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(await fileEx.arrayBuffer());
@@ -80,44 +81,51 @@
         const valA1 = sheet.getCell('A1').text || "";
         const valA3 = sheet.getCell('A3').text || "";
 
+        // MẪU 2: LONG PHƯƠNG (A1 Merge, Tiêu đề Dòng 2-3, Dữ liệu từ Dòng 4)
         if (valA1 && !valA3.includes("Công ty:")) {
-            // MẪU LONG PHƯƠNG
             const lines = valA1.split('\n');
-            document.getElementById('inputTenCty').value = lines[0].replace(/Công ty[:\s]*/gi, "").trim();
-            const noiDungHL = sheet.getCell('A2').text.trim(); // Lấy từ dòng 2
+            document.getElementById('inputTenCty').value = lines[0].trim();
+            const noiDungChung = sheet.getCell('J2').text.trim() || sheet.getCell('J4').text.trim();
 
             sheet.eachRow((row, i) => {
-                if (i >= 3) {
-                    const ten = row.getCell(3).text.trim();
-                    if (ten && ten !== "Họ và tên") {
+                if (i >= 4) { // Dữ liệu từ dòng 4
+                    const ten = row.getCell(3).text.trim(); // Họ tên Cột C
+                    if (ten) {
                         data.push({
-                            stt: data.length+1, hoten: ten, ngaysinh: row.getCell(5).text, gioitinh: row.getCell(6).text,
-                            cccd: row.getCell(4).text, manv: row.getCell(8).text, quoctich: row.getCell(7).text,
-                            donvi: row.getCell(9).text, noidung: noiDungHL, photo: anhTuZip[cleanStr(ten)] || null
+                            stt: data.length+1, hoten: ten, 
+                            ngaysinh: row.getCell(6).text, gioitinh: row.getCell(7).text,
+                            cccd: row.getCell(5).text, congviec: row.getCell(4).text, 
+                            manv: row.getCell(2).text, quoctich: row.getCell(8).text,
+                            donvi: row.getCell(9).text, noidung: row.getCell(10).text || noiDungChung, 
+                            photo: anhTuZip[cleanStr(ten)] || null
                         });
                     }
                 }
             });
-        } else {
-            // MẪU TTHV
+        } 
+        // MẪU 1: TTHV (Sửa lỗi lệch cột)
+        else {
             document.getElementById('inputTenCty').value = valA3.replace(/Công ty[:\s]*/gi, "").trim();
             document.getElementById('inputMST').value = sheet.getCell('A4').text.replace(/Mã số thuế[:\s]*/gi, "").trim();
-            const noiDungHL = sheet.getCell('A8').text.trim(); // Lấy từ dòng 8
+            const noiDungHL = sheet.getCell('A8').text.trim();
 
             const anhExcel = {};
             sheet.getImages().forEach(img => { if (img.range.tl.nativeCol === 8) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer; });
 
-            let nhomHienTai = "";
+            let nhomTam = "";
             sheet.eachRow((row, i) => {
                 if (i >= 10) {
                     const colA = row.getCell(1).text.trim();
                     const colB = row.getCell(2).text.trim();
-                    if (colA && !colB) nhomHienTai = colA;
+                    if (colA && !colB) nhomTam = colA;
                     else if (colB) {
                         data.push({
-                            stt: data.length+1, hoten: colB, ngaysinh: row.getCell(4).text, gioitinh: row.getCell(5).text,
-                            cccd: row.getCell(3).text, manv: row.getCell(7).text, quoctich: row.getCell(6).text,
-                            donvi: nhomHienTai, noidung: noiDungHL, photo: anhExcel[i-1] || anhTuZip[cleanStr(colB)] || null
+                            stt: data.length+1, hoten: colB, 
+                            ngaysinh: row.getCell(4).text, gioitinh: row.getCell(3).text,
+                            cccd: row.getCell(7).text, congviec: row.getCell(6).text, 
+                            manv: row.getCell(7).text, quoctich: row.getCell(5).text,
+                            donvi: nhomTam, noidung: row.getCell(8).text || noiDungHL, 
+                            photo: anhExcel[i-1] || anhTuZip[cleanStr(colB)] || null
                         });
                     }
                 }
@@ -129,7 +137,7 @@
         tbody.innerHTML = "";
         data.forEach(s => {
             const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
-            tbody.innerHTML += `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">`: '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
+            tbody.innerHTML += `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
         });
         document.getElementById('btnSync').style.display = 'block';
     }
@@ -147,14 +155,13 @@
                 const driveData = await res.json();
                 driveUrl = driveData.fileUrl || "";
             }
-            // Đồng bộ full dữ liệu lên Firebase
             await set(ref(db, `HocVien/${mst}/${s.cccd}`), { 
                 HoTen: s.hoten, NgaySinh: s.ngaysinh, GioiTinh: s.gioitinh, CCCD: s.cccd, 
-                MaNV: s.manv, QuocTich: s.quoctich, DonVi: s.donvi, NoiDungHL: s.noidung, 
-                PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() 
+                CongViec: s.congviec, MaNV: s.manv, QuocTich: s.quoctich, DonVi: s.donvi, 
+                NoiDungHL: s.noidung, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() 
             });
         }
-        alert("✅ Đã đồng bộ toàn bộ dữ liệu học viên lên hệ thống!");
+        alert("✅ Đồng bộ v2.9 thành công!");
     }
 </script>
 </body>
