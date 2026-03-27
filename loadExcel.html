@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>VDC Hệ Thống Xử Lý Dữ Liệu Học Viên v2.5</title>
+    <script src="./js/exceljs.min.js"></script>
+    <script src="./js/jszip.min.js"></script>
+    <script src="./js/firebase-config.js" type="module"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
+        .sidebar { width: 350px; background: #2c3e50; color: white; padding: 25px; box-sizing: border-box; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
+        .main-content { flex: 1; padding: 30px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        h2, h3 { margin-top: 0; color: #3498db; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #bdc3c7; }
+        input[type="file"], input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #34495e; color: white; box-sizing: border-box; }
+        
+        .table-container { flex: 1; background: white; border-radius: 8px; overflow: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #34495e; color: white; position: sticky; top: 0; padding: 12px; font-size: 14px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; font-size: 13px; }
+        .preview-img { width: 50px; height: 65px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; }
+
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        .btn-preview { background: #3498db; color: white; }
+        .btn-sync { background: #27ae60; color: white; display: none; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        #status { margin-top: 15px; font-size: 13px; text-align: center; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>VDC DATA CENTER</h2>
+    
+    <div class="form-group">
+        <label>1. FILE EXCEL DANH SÁCH:</label>
+        <input type="file" id="fileExcel" accept=".xlsx" />
+    </div>
+
+    <div class="form-group">
+        <label>2. FILE ZIP ẢNH (NẾU CÓ):</label>
+        <input type="file" id="fileZip" accept=".zip" />
+    </div>
+
+    <div class="form-group" style="background: #1a252f; padding: 10px; border-radius: 5px;">
+        <label style="color: #f1c40f;">3. THÔNG TIN ĐỒNG BỘ CLOUD:</label>
+        <input type="text" id="inputMST" placeholder="Nhập Mã Số Thuế..." style="margin-bottom: 10px;">
+        <input type="text" id="inputTenCty" placeholder="Nhập Tên Công Ty...">
+    </div>
+
+    <button class="btn btn-preview" onclick="docDuLieuPreview()">🔍 XEM TRƯỚC DỮ LIỆU</button>
+    <button id="btnSync" class="btn btn-sync" onclick="xuatDuLieuLenHethong()">🚀 ĐỒNG BỘ LÊN VDC CLOUD</button>
+    
+    <div id="status"></div>
+</div>
+
+<div class="main-content">
+    <h3>BẢNG KIỂM TRA THÔNG TIN HỌC VIÊN</h3>
+    <div class="table-container">
+        <table id="previewTable">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Hình ảnh</th>
+                    <th>Họ và Tên</th>
+                    <th>CCCD</th>
+                    <th>Nhóm/Đơn vị</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { db, ref, set } from './js/firebase-config.js';
+
+    // Cấu hình URL GAS của bạn
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
+    let globalDataHocVien = [];
+
+    // Hàm chuẩn hóa tên file để khớp ZIP
+    function chuanHoaTen(str) {
+        if (!str) return "";
+        return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase().replace(/\s+/g, '');
+    }
+
+    window.docDuLieuPreview = async function() {
+        const fileExcel = document.getElementById('fileExcel').files[0];
+        const fileZip = document.getElementById('fileZip').files[0];
+        const status = document.getElementById('status');
+        const tbody = document.querySelector('#previewTable tbody');
+        
+        if (!fileExcel) return alert("Vui lòng chọn file Excel!");
+        
+        status.innerText = "⏳ Đang trích xuất dữ liệu...";
+        tbody.innerHTML = "";
+        globalDataHocVien = [];
+
+        try {
+            // 1. Xử lý ảnh từ ZIP
+            const anhTuZip = {};
+            if (fileZip) {
+                const zipData = await JSZip.loadAsync(fileZip);
+                for (let filename in zipData.files) {
+                    if (filename.match(/\.(jpg|jpeg|png)$/i)) {
+                        const buffer = await zipData.files[filename].async("arraybuffer");
+                        const nameOnly = filename.split('/').pop().split('.').shift();
+                        anhTuZip[chuanHoaTen(nameOnly)] = buffer;
+                    }
+                }
+            }
+
+            // 2. Đọc file Excel
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(await fileExcel.arrayBuffer());
+            const sheet = workbook.worksheets[0];
+
+            // Tự động nhận diện Đơn vị (Ô A1 hoặc A3)
+            const cellA1 = sheet.getCell('A1').text || "";
+            const cellA3 = sheet.getCell('A3').text || "";
+            document.getElementById('inputTenCty').value = (cellA1.split('\n')[0] || cellA3).replace(/Công ty[:\s]*/gi, "").trim();
+
+            const anhTuExcel = {};
+            sheet.getImages().forEach(img => {
+                anhTuExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer;
+            });
+
+            let currentGroup = "";
+            let count = 1;
+
+            sheet.eachRow((row, rowNumber) => {
+                if (rowNumber >= 4) { // Hỗ trợ cả cấu trúc dòng 4 và dòng 10
+                    const colA = row.getCell(1).text.trim();
+                    const hoTen = row.getCell(2).text.trim();
+                    const cccd = row.getCell(3).text.trim();
+
+                    if (colA && !hoTen) currentGroup = colA;
+                    else if (hoTen) {
+                        let photoBuffer = anhTuExcel[rowNumber - 1] || anhTuZip[chuanHoaTen(hoTen)] || anhTuZip[chuanHoaTen(cccd)];
+
+                        const student = { stt: count++, donvi: currentGroup, hoten: hoTen, cccd: cccd, photo: photoBuffer };
+                        globalDataHocVien.push(student);
+
+                        const tr = document.createElement('tr');
+                        const imgUrl = photoBuffer ? URL.createObjectURL(new Blob([photoBuffer])) : "";
+                        tr.innerHTML = `
+                            <td>${student.stt}</td>
+                            <td>${imgUrl ? `<img class="preview-img" src="${imgUrl}">` : '<span style="color:red">Thiếu</span>'}</td>
+                            <td>${student.hoten}</td>
+                            <td>${student.cccd}</td>
+                            <td>${student.donvi}</td>`;
+                        tbody.appendChild(tr);
+                    }
+                }
+            });
+
+            if (globalDataHocVien.length > 0) {
+                document.getElementById('btnSync').style.display = 'block';
+                status.innerHTML = `<b style="color:#2ecc71">✅ Đã sẵn sàng đồng bộ ${globalDataHocVien.length} người.</b>`;
+            }
+        } catch (e) { alert("Lỗi: " + e.message); }
+    }
+
+    window.xuatDuLieuLenHethong = async function() {
+        const mst = document.getElementById('inputMST').value.trim();
+        const tenCty = document.getElementById('inputTenCty').value.trim();
+        const status = document.getElementById('status');
+
+        if (!mst || !tenCty) return alert("Vui lòng nhập MST và Tên công ty để định danh thư mục!");
+
+        status.innerText = "⏳ Đang tải ảnh lên Drive & lưu Firebase...";
+        let successCount = 0;
+
+        for (let s of globalDataHocVien) {
+            try {
+                let driveUrl = "";
+                if (s.photo) {
+                    // 1. Chuyển ảnh sang Base64 và đẩy lên Google Drive qua GAS
+                    const base64 = btoa(new Uint8Array(s.photo).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+                    const res = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            type: "upload_student_image",
+                            mst: mst, tenCty: tenCty, cccd: s.cccd, base64: base64
+                        })
+                    });
+                    const driveData = await res.json();
+                    driveUrl = driveData.fileUrl || "";
+                }
+
+                // 2. Lưu thông tin định danh vào Firebase Realtime Database
+                const safePath = `HocVien/${mst}/${s.cccd}`;
+                await set(ref(db, safePath), {
+                    HoTen: s.hoten,
+                    CCCD: s.cccd,
+                    DonVi: s.donvi,
+                    PhotoUrl: driveUrl,
+                    NgayCapNhat: new Date().toISOString()
+                });
+                successCount++;
+                status.innerText = `⏳ Đang xử lý: ${successCount}/${globalDataHocVien.length}`;
+            } catch (err) { console.error("Lỗi dòng STT " + s.stt, err); }
+        }
+
+        status.innerHTML = `<b style="color:#27ae60">✅ HOÀN TẤT! Đã đồng bộ ${successCount} nhân sự lên hệ thống VDC.</b>`;
+    }
+</script>
+</body>
+</html>
