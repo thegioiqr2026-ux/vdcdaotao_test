@@ -2,196 +2,179 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Trung Tâm Điều Khiển In v2.1</title>
+    <title>Hệ Thống Quản Lý In Ấn v2.3</title>
     <script src="./js/exceljs.min.js"></script>
+    <script src="./js/jszip.min.js"></script>
     <style>
         body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
-        .main-panel { background: white; max-width: 1000px; margin: 0 auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 400px; gap: 25px; }
-        
-        /* Cột trái: Điều khiển */
+        .main-panel { background: white; max-width: 1000px; margin: 0 auto; padding: 25px; border-radius: 12px; display: grid; grid-template-columns: 1fr 380px; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .controls { border-right: 1px solid #eee; padding-right: 20px; }
-        .control-group { margin-bottom: 15px; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; color: #34495e; }
-        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
-        .btn-run { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
-        
-        /* Cột phải: Thẻ mẫu (Demo Card) */
-        .demo-section { text-align: center; background: #fdfdfd; padding: 20px; border-radius: 8px; border: 1px dashed #ccc; }
-        
-        /* Style Thẻ 44 mẫu */
-        .card-44-demo { 
-            width: 62mm; height: 90mm; border: 0.1mm solid #ccc; margin: 0 auto;
-            position: relative; display: flex; flex-direction: column; align-items: center;
-            background-image: url('./doctemplate/backgroundTheATVSLD.png');
-            background-size: 100% 100%; text-align: center; padding: 5mm 0; box-sizing: border-box;
-            background-color: #fff;
-        }
-
-        /* Style Thẻ 62 mẫu */
-        .card-62-demo { 
-            width: 85mm; height: 53mm; border: 1.2mm double #CC0000; margin: 0 auto;
-            background-color: #FFEA00; position: relative; display: flex;
-            flex-direction: column; align-items: center; padding: 3mm 0; box-sizing: border-box;
-            box-shadow: inset 0 0 0 0.4mm #000;
-        }
-
-        .photo-demo { border: 0.5px solid #000; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #888; }
-        
-        /* Preview Table */
-        #previewSection { grid-column: 1 / span 2; margin-top: 20px; display: none; border-top: 2px solid #eee; padding-top: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 13px; }
+        .control-group { margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e9ecef; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; color: #2c3e50; font-size: 14px; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .btn-run { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        .zip-options { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; align-items: center; }
+        #previewSection { grid-column: 1 / span 2; margin-top: 20px; border-top: 2px solid #007bff; padding-top: 20px; display: none; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
         th { background: #34495e; color: white; }
-        .preview-img { width: 45px; height: 60px; object-fit: fill; border: 1px solid #ddd; }
+        .preview-img { width: 45px; height: 55px; object-fit: cover; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div class="main-panel">
     <div class="controls">
-        <h2 style="color:#2c3e50; margin-bottom:20px;">HỆ THỐNG IN BIỂU MẪU</h2>
-        
-        <div class="control-group">
-            <label>1. Chọn loại biểu mẫu:</label>
-            <select id="formType" onchange="updateDemoCard()">
-                <option value="44">Thẻ ATVSLĐ (9 thẻ/A4 - NĐ44)</option>
-                <option value="62">Thẻ An Toàn Điện (8 thẻ/A4 - NĐ62)</option>
+        <h2 style="margin-top:0; color:#007bff;">ĐIỀU KHIỂN IN ẤN</h2>
+
+        <div class="control-group" style="background: #fff3cd; border-color: #ffeeba;">
+            <label>📂 Loại cấu trúc File Excel:</label>
+            <select id="excelType">
+                <option value="standard">Mẫu cũ (Ảnh trong Excel - Ô A3)</option>
+                <option value="modern">Mẫu mới (Ảnh trong ZIP - Ô A1 Merge)</option>
             </select>
         </div>
+
         <div class="control-group">
-            <label>2. Tải File Excel học viên:</label>
+            <label>🎨 Mẫu thẻ in:</label>
+            <select id="formType">
+                <option value="44">Thẻ ATVSLĐ (9 thẻ/A4)</option>
+                <option value="62">Thẻ An Toàn Điện (8 thẻ/A4)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>📊 Tải file Excel (.xlsx):</label>
             <input type="file" id="excelInput" accept=".xlsx">
         </div>
 
-        <button class="btn-run" onclick="extractData()">🔍 TRÍCH XUẤT VÀ KIỂM TRA</button>
-        <div id="status" style="margin-top:10px; font-weight:bold; color:#2980b9; text-align:center;"></div>
-    </div>
-
-    <div class="demo-section" id="demoContainer">
-        <label style="margin-bottom:15px; color:#7f8c8d; font-size:13px;">HÌNH ẢNH MẪU SẼ IN</label>
-        <div id="demoContent">
-            <div class="card-44-demo">
-                <div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center;">TÊN ĐƠN VỊ CÔNG TÁC</div>
-                <div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
-                <div class="photo-demo" style="width:20mm; height:30mm; margin:5mm 0;">ẢNH 2x3</div>
-                <div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VT</div>
+        <div id="zipGroup" class="control-group" style="display:none;">
+            <label>📦 Tải file ZIP hình ảnh:</label>
+            <input type="file" id="zipInput" accept=".zip">
+            <div class="zip-options">
+                <span>Khớp theo:</span>
+                <label><input type="radio" name="matchBy" value="name" checked> Họ tên</label>
+                <label><input type="radio" name="matchBy" value="cccd"> Số CCCD</label>
             </div>
         </div>
-        <p id="demoDesc" style="font-size:12px; color:#95a5a6; margin-top:15px;">Kích thước: 62mm x 90mm (Dọc)</p>
+
+        <button class="btn-run" onclick="handleData()">🚀 TRÍCH XUẤT DỮ LIỆU</button>
+        <div id="status" style="text-align:center; margin-top:10px; font-weight:bold; color:#d9534f;"></div>
+    </div>
+
+    <div class="demo-area" style="text-align:center; padding:10px;">
+        <label>XEM TRƯỚC MẪU (DEMO)</label>
+        <div id="demoCard" style="margin:10px auto; border:1px solid #ddd; width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat;"></div>
+        <p style="font-size:12px; color:#666;">Hệ thống sẽ tự động dàn trang in</p>
     </div>
 
     <div id="previewSection">
-        <h3 style="color:#2c3e50;">Danh sách học viên trích xuất:</h3>
+        <h3>Kiểm tra danh sách nhân viên:</h3>
         <table id="previewTable">
             <thead>
                 <tr>
                     <th>STT</th>
-                    <th>Ảnh thẻ</th>
+                    <th>Ảnh</th>
                     <th>Họ và Tên</th>
-                    <th>Mã số thẻ</th>
-                    <th>Đơn vị (Ô A3)</th>
+                    <th>Mã số / CCCD</th>
+                    <th>Đơn vị công tác</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <button class="btn-run" style="background:#3498db; margin-top:25px; height:50px;" onclick="goToPrint()">🖨️ XÁC NHẬN VÀ XUẤT LỆNH IN</button>
+        <button class="btn-run" style="background:#007bff;" onclick="startPrinting()">🖨️ XÁC NHẬN VÀ XUẤT THẺ IN</button>
     </div>
 </div>
 
 <script>
-    // Hàm cập nhật thẻ mẫu khi thay đổi lựa chọn
-    function updateDemoCard() {
-        const type = document.getElementById('formType').value;
-        const content = document.getElementById('demoContent');
-        const desc = document.getElementById('demoDesc');
-        
-        if (type === '44') {
-            content.innerHTML = `
-                <div class="card-44-demo">
-                    <div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center;">TÊN ĐƠN VỊ CÔNG TÁC</div>
-                    <div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
-                    <div class="photo-demo" style="width:20mm; height:30mm; margin:5mm 0;">ẢNH 2x3</div>
-                    <div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VT</div>
-                </div>`;
-            desc.innerText = "Kích thước: 62mm x 90mm (Khổ dọc)";
-        } else {
-            content.innerHTML = `
-                <div class="card-62-demo">
-                    <div style="font-size:7.5pt; font-weight:bold;">TÊN ĐƠN VỊ CÔNG TÁC</div>
-                    <div style="font-size:11pt; font-weight:bold; color:#CC0000; margin:2mm 0;">THẺ AN TOÀN ĐIỆN</div>
-                    <div class="photo-demo" style="width:22mm; height:30mm; margin:1mm 0;">ẢNH 2x3</div>
-                    <div style="font-size:9pt; font-weight:bold; margin-top:2mm;">Số: 123456789</div>
-                </div>`;
-            desc.innerText = "Kích thước: 85mm x 53mm (Khổ ngang)";
-        }
+    // Hiện/Ẩn mục ZIP dựa trên cấu trúc Excel
+    document.getElementById('excelType').onchange = function() {
+        document.getElementById('zipGroup').style.display = this.value === 'modern' ? 'block' : 'none';
+    };
+
+    function normalizeStr(s) {
+        return s ? s.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/\s+/g, "") : "";
     }
 
-    function getSafeText(cell) {
-        if (!cell || cell.value === null) return "";
-        return cell.text ? cell.text.toString() : cell.value.toString();
-    }
+    async function handleData() {
+        const exType = document.getElementById('excelType').value;
+        const fileEx = document.getElementById('excelInput').files[0];
+        const status = document.getElementById('status');
 
-    async function extractData() {
-        const file = document.getElementById('excelInput').files[0];
-        if (!file) return alert("Vui lòng chọn file Excel!");
+        if (!fileEx) return alert("Chưa chọn file Excel!");
+        status.innerText = "⏳ Đang trích xuất...";
 
-        document.getElementById('status').innerText = "⏳ Đang trích xuất dữ liệu...";
         const wb = new ExcelJS.Workbook();
-        await wb.xlsx.load(await file.arrayBuffer());
+        await wb.xlsx.load(await fileEx.arrayBuffer());
         const sh = wb.worksheets[0];
+        let students = [];
+        let imgMap = {};
 
-        let rawDV = getSafeText(sh.getCell('A3'));
-        let cleanDV = rawDV.replace(/Công ty[:\s]*/gi, "").trim();
-        let shortName = cleanDV.split(/\s+/).filter(w=>w).map(w=>w[0]).join('').toUpperCase();
-        let year = new Date().getFullYear();
-
-        const imgMap = {};
-        sh.getImages().forEach(img => {
-            if (img.range.tl.nativeCol === 8) {
-                imgMap[img.range.tl.nativeRow] = URL.createObjectURL(new Blob([wb.getImage(img.imageId).buffer]));
+        // XỬ LÝ ẢNH
+        if (exType === 'standard') {
+            sh.getImages().forEach(img => {
+                if (img.range.tl.nativeCol === 8) {
+                    imgMap[img.range.tl.nativeRow] = URL.createObjectURL(new Blob([wb.getImage(img.imageId).buffer]));
+                }
+            });
+        } else {
+            const fZip = document.getElementById('zipInput').files[0];
+            if (!fZip) return alert("Mẫu mới yêu cầu phải có file ZIP hình ảnh!");
+            const matchBy = document.querySelector('input[name="matchBy"]:checked').value;
+            const zip = await JSZip.loadAsync(fZip);
+            for (let name in zip.files) {
+                if (name.match(/\.(jpg|jpeg|png)$/i)) {
+                    const blob = await zip.files[name].async("blob");
+                    imgMap[normalizeStr(name.split('/').pop().split('.').shift())] = URL.createObjectURL(blob);
+                }
             }
-        });
+        }
+
+        // XỬ LÝ ĐƠN VỊ & DANH SÁCH
+        let company = "";
+        let startRow = 10;
+
+        if (exType === 'standard') {
+            company = sh.getCell('A3').text.replace(/Công ty[:\s]*/gi, "").trim();
+            startRow = 10;
+        } else {
+            const fullA1 = sh.getCell('A1').text || "";
+            company = fullA1.split('\n')[0].replace(/Công ty[:\s]*/gi, "").trim();
+            startRow = 4;
+        }
 
         const tbody = document.querySelector("#previewTable tbody");
         tbody.innerHTML = "";
         let count = 0;
 
         sh.eachRow((row, i) => {
-            let name = getSafeText(row.getCell(2));
-            let cccd = getSafeText(row.getCell(3));
-            if (i >= 10 && name) {
-                count++;
-                const displayCode = document.getElementById('formType').value === '44' 
-                    ? `${count}/${year}/${shortName}` 
-                    : cccd;
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${count}</td>
-                        <td><img src="${imgMap[i-1] || ''}" class="preview-img"></td>
-                        <td>${name}</td>
-                        <td>${displayCode}</td>
-                        <td>${cleanDV}</td>
-                    </tr>`;
+            if (i >= startRow) {
+                let name = row.getCell(2).text.trim();
+                let cccd = row.getCell(3).text.trim();
+                if (name) {
+                    count++;
+                    let photo = "";
+                    if (exType === 'standard') {
+                        photo = imgMap[i-1] || "";
+                    } else {
+                        const matchBy = document.querySelector('input[name="matchBy"]:checked').value;
+                        photo = imgMap[normalizeStr(matchBy === 'name' ? name : cccd)] || "";
+                    }
+
+                    students.push({ name, cccd, photo, company });
+                    tbody.innerHTML += `<tr><td>${count}</td><td><img src="${photo}" class="preview-img"></td><td>${name}</td><td>${cccd}</td><td>${company}</td></tr>`;
+                }
             }
         });
 
-        // Lưu dữ liệu vào bộ nhớ đệm
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const binary = new Uint8Array(e.target.result).reduce((data, byte) => data + String.fromCharCode(byte), '');
-            sessionStorage.setItem('excel_data_buffer', btoa(binary));
-        };
-        reader.readAsArrayBuffer(file);
-
+        sessionStorage.setItem('final_data', JSON.stringify(students));
         document.getElementById('previewSection').style.display = "block";
-        document.getElementById('status').innerText = `✅ Trích xuất thành công ${count} học viên.`;
+        status.innerText = `✅ Đã xử lý ${count} nhân sự.`;
     }
 
-    function goToPrint() {
-        const template = document.getElementById('formType').value === '44' 
-            ? './doctemplate/printThe44.html' 
-            : './doctemplate/printThe62.html';
-        window.location.href = template;
+    function startPrinting() {
+        const type = document.getElementById('formType').value;
+        window.location.href = `./doctemplate/printThe${type}.html`;
     }
 </script>
 </body>
