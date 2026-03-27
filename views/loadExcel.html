@@ -2,12 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Data Center v3.3</title>
+    <title>VDC Data Center v3.6</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
     <style>
-        /* Giữ nguyên CSS bản v2.9 */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; overflow: hidden; }
         .sidebar { width: 330px; background: #2c3e50; color: white; padding: 20px; overflow-y: auto; }
         .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
@@ -15,7 +14,7 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #bdc3c7; }
         input[type="file"], input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #34495e; color: white; box-sizing: border-box; }
         .table-container { flex: 1; background: white; border-radius: 8px; overflow: auto; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1600px; }
         th { background: #34495e; color: white; position: sticky; top: 0; padding: 10px; font-size: 12px; }
         td { padding: 8px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px; }
         .preview-img { width: 45px; height: 60px; object-fit: cover; border: 1px solid #ddd; }
@@ -25,20 +24,14 @@
 <body>
 
 <div class="sidebar">
-    <h2 style="color:#3498db; text-align:center;">VDC CRM v3.3</h2>
-    <div class="form-group">
-        <label>1. FILE EXCEL:</label>
-        <input type="file" id="fileExcel" accept=".xlsx" />
-    </div>
-    <div class="form-group">
-        <label>2. FILE ZIP ẢNH:</label>
-        <input type="file" id="fileZip" accept=".zip" />
-    </div>
+    <h2 style="color:#3498db; text-align:center;">VDC CRM v3.6</h2>
+    <div class="form-group"><label>1. FILE EXCEL:</label><input type="file" id="fileExcel" accept=".xlsx" /></div>
+    <div class="form-group"><label>2. FILE ZIP ẢNH:</label><input type="file" id="fileZip" accept=".zip" /></div>
     <div style="background: #1a252f; padding: 12px; border-radius: 6px;">
         <input type="text" id="inputMST" placeholder="Mã số thuế..." style="margin-bottom: 10px;">
         <input type="text" id="inputTenCty" placeholder="Tên công ty...">
     </div>
-    <button class="btn" style="background:#3498db;" id="btnPreview">🔍 XEM TRƯỚC</button>
+    <button class="btn" style="background:#3498db;" id="btnPreview">🔍 XEM TRƯỚC DỮ LIỆU</button>
     <button id="btnSync" class="btn" style="background:#27ae60; display:none;">🚀 ĐỒNG BỘ CLOUD</button>
     <div id="status" style="margin-top:10px; font-size:12px; text-align:center;"></div>
 </div>
@@ -49,7 +42,7 @@
             <thead>
                 <tr>
                     <th>STT</th><th>Ảnh</th><th>Họ và Tên</th><th>Ngày sinh</th><th>Giới tính</th>
-                    <th>CCCD</th><th>Công việc</th><th>Mã NV</th><th>Quốc tịch</th><th>Nhóm</th><th>Nội dung HL</th>
+                    <th>CCCD/Hộ chiếu</th><th>Chức vụ/Công việc</th><th>Mã NV</th><th>Quốc tịch</th><th>NHÓM</th><th>NỘI DUNG ĐÀO TẠO</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -58,22 +51,19 @@
 </div>
 
 <script type="module">
-    import { db, ref, set } from '../js/firebase-config.js'; // Đường dẫn tương đối cho Iframe
-    
+    import { db, ref, set } from '../js/firebase-config.js';
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
     let globalDataHocVien = [];
 
     function cleanStr(s) { return s ? s.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/\s+/g, "") : ""; }
 
-    // Gắn sự kiện bằng JS thay vì onclick trong HTML để ổn định hơn
     document.getElementById('btnPreview').addEventListener('click', async () => {
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
         const status = document.getElementById('status');
-        
         if (!fileEx) return alert("Chưa chọn file Excel!");
 
-        status.innerText = "⏳ Đang xử lý...";
+        status.innerText = "⏳ Đang bóc tách dữ liệu v3.6...";
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(await fileEx.arrayBuffer());
         const sheet = workbook.worksheets[0];
@@ -92,29 +82,33 @@
         const valA1 = sheet.getCell('A1').text || "";
         const valA3 = sheet.getCell('A3').text || "";
 
-        // Logic bóc tách Mẫu 2 (Long Phương)
+        // MẪU 2: LONG PHƯƠNG (Dữ liệu bắt đầu từ dòng 4 sau tiêu đề gộp 2&3)
         if (valA1 && !valA3.includes("Công ty:")) {
             const lines = valA1.split('\n');
             document.getElementById('inputTenCty').value = lines[0].trim();
-            const noiDungChung = sheet.getCell('J2').text.trim() || sheet.getCell('J4').text.trim();
 
             sheet.eachRow((row, i) => {
-                if (i >= 4) {
-                    const ten = row.getCell(3).text.trim();
-                    if (ten) {
+                if (i >= 4) { 
+                    const ten = row.getCell(3).text.trim(); // Cột C: Họ và tên
+                    if (ten && ten !== "Họ và tên") {
                         data.push({
-                            stt: data.length+1, hoten: ten, 
-                            ngaysinh: row.getCell(6).text, gioitinh: row.getCell(7).text,
-                            cccd: row.getCell(5).text, congviec: row.getCell(4).text, 
-                            manv: row.getCell(2).text, quoctich: row.getCell(8).text,
-                            donvi: row.getCell(9).text, noidung: row.getCell(10).text || noiDungChung, 
+                            stt: data.length+1, 
+                            manv: row.getCell(2).text.trim(),   // Cột B: Mã nhân viên
+                            hoten: ten,                         // Cột C: Họ và tên
+                            congviec: row.getCell(4).text.trim(),// Cột D: Chức vụ/Chức danh
+                            cccd: row.getCell(5).text.trim(),    // Cột E: CCCD/Hộ chiếu
+                            ngaysinh: row.getCell(6).text,       // Cột F: Ngày sinh
+                            gioitinh: row.getCell(7).text,       // Cột G: Giới tính
+                            quoctich: row.getCell(8).text,       // Cột H: Quốc tịch
+                            donvi: row.getCell(9).text.trim(),   // Cột I: NHÓM
+                            noidung: row.getCell(10).text.trim(),// Cột J: NỘI DUNG ĐÀO TẠO
                             photo: anhTuZip[cleanStr(ten)] || null
                         });
                     }
                 }
             });
         } 
-        // Logic bóc tách Mẫu 1 (TTHV)
+        // MẪU 1: TTHV (Sửa đúng thứ tự cột theo yêu cầu)
         else {
             document.getElementById('inputTenCty').value = valA3.replace(/Công ty[:\s]*/gi, "").trim();
             document.getElementById('inputMST').value = sheet.getCell('A4').text.replace(/Mã số thuế[:\s]*/gi, "").trim();
@@ -131,11 +125,16 @@
                     if (colA && !colB) nhomTam = colA;
                     else if (colB) {
                         data.push({
-                            stt: data.length+1, hoten: colB, 
-                            ngaysinh: row.getCell(4).text, gioitinh: row.getCell(3).text,
-                            cccd: row.getCell(7).text, congviec: row.getCell(6).text, 
-                            manv: row.getCell(7).text, quoctich: row.getCell(5).text,
-                            donvi: nhomTam, noidung: row.getCell(8).text || noiDungHL, 
+                            stt: data.length+1, 
+                            hoten: colB,                        // Cột B
+                            gioitinh: row.getCell(3).text,       // Cột C
+                            ngaysinh: row.getCell(4).text,       // Cột D
+                            quoctich: row.getCell(5).text,       // Cột E
+                            congviec: row.getCell(6).text,       // Cột F
+                            cccd: row.getCell(7).text,           // Cột G (CCCD)
+                            manv: row.getCell(7).text,           // Lấy tạm CCCD làm Mã NV cho Mẫu 1
+                            donvi: nhomTam,                      // Nhóm từ Cột A
+                            noidung: row.getCell(8).text || noiDungHL, 
                             photo: anhExcel[i-1] || anhTuZip[cleanStr(colB)] || null
                         });
                     }
@@ -151,16 +150,15 @@
             tbody.innerHTML += `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
         });
         document.getElementById('btnSync').style.display = 'block';
-        status.innerText = `✅ Đã bóc tách ${data.length} nhân sự.`;
+        status.innerText = `✅ Đã bóc tách thành công ${data.length} nhân sự.`;
     });
 
     document.getElementById('btnSync').addEventListener('click', async () => {
         const mst = document.getElementById('inputMST').value.trim();
         const ten = document.getElementById('inputTenCty').value.trim();
-        const status = document.getElementById('status');
         if (!mst || !ten) return alert("Nhập đủ MST và Tên!");
         
-        status.innerText = "⏳ Đang đồng bộ...";
+        document.getElementById('status').innerText = "⏳ Đang đồng bộ Cloud...";
         for (let s of globalDataHocVien) {
             let driveUrl = "";
             if (s.photo) {
@@ -175,7 +173,7 @@
                 NoiDungHL: s.noidung, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() 
             });
         }
-        status.innerHTML = `<b style="color:green">✅ Đồng bộ v3.3 thành công!</b>`;
+        document.getElementById('status').innerHTML = `<b style="color:green">✅ Đồng bộ v3.6 hoàn tất!</b>`;
     });
 </script>
 </body>
