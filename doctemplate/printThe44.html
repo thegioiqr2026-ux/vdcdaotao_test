@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.3</title>
+    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.4</title>
     <script src="../js/exceljs.min.js"></script>
     <style>
         @page { size: A4; margin: 0; }
@@ -10,8 +10,11 @@
             .no-print { display: none; }
             body { background: none !important; margin: 0; padding: 0; }
             .page-break { page-break-after: always; display: block; }
-            /* Cưỡng ép in đồ họa */
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            /* CƯƠNG ÉP HIỂN THỊ ĐỒ HỌA NỀN */
+            * { 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+            }
         }
         
         body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 0; }
@@ -26,21 +29,21 @@
         .card { 
             width: 62mm; height: 90mm; border: 0.1mm solid #ccc; 
             position: relative; display: flex; flex-direction: column; align-items: center;
-            /* Thiết lập khung chứa để hiển thị ảnh nền lớp dưới */
-            background-repeat: no-repeat !important;
-            background-size: 100% 100% !important;
             text-align: center; padding: 5mm 0; box-sizing: border-box;
+            background-color: transparent !important;
+            z-index: 1;
         }
 
-        /* Lớp giả để chứa hình nền cưỡng ép */
-        .card::before {
+        /* TẠO LỚP NỀN CỐ ĐỊNH BẰNG THẺ GIẢ */
+        .card::after {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            /* Thay URL bằng ảnh nền của bạn */
-            background-image: url('backgroundTheATVSLD.png');
-            background-size: 100% 100%;
-            z-index: -1;
+            /* Đảm bảo file backgroundTheATVSLD.png nằm cùng thư mục /doctemplate/ */
+            background-image: url('backgroundTheATVSLD.png') !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+            z-index: -1; /* Đẩy xuống dưới cùng */
         }
 
         .info-dv { font-size: 9pt; font-weight: bold; text-transform: uppercase; width: 90%; height: 40px; display: flex; align-items: center; justify-content: center; }
@@ -111,8 +114,7 @@
                     });
                     area.appendChild(page);
                 }
-                // Chờ ảnh nhân viên nạp xong
-                setTimeout(() => { window.print(); }, 1000);
+                setTimeout(() => { window.print(); }, 1500); // Tăng thời gian chờ để nạp hình nền
             } catch (e) { console.error(e); }
         };
     </script>
