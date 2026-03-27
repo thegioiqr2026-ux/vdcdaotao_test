@@ -75,17 +75,33 @@ async function initApp(user) {
     loadView('views/kanban.html');
 }
 
+// Phiên bản: 3.1 - Cập nhật Module Thông tin học viên & In thẻ
+
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
-    contentDiv.innerHTML = `<div class="flex items-center justify-center h-full"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i></div>`;
+    
+    // Hiển thị trạng thái chờ tải dữ liệu
+    contentDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-blue-500">
+        <i class="fa-solid fa-spinner fa-spin text-3xl mb-2"></i>
+        <span class="text-xs font-medium text-gray-500">Đang nạp module...</span>
+    </div>`;
+    
+    // Xử lý nạp Module In thẻ qua Iframe để tránh xung đột CSS Tailwind
+    if (viewFile === 'printdoc.html') {
+        contentDiv.innerHTML = `<iframe src="printdoc.html?v=${new Date().getTime()}" class="w-full h-full border-none" style="min-height: 85vh;"></iframe>`;
+        return;
+    }
+
+    // Nạp các view thành phần (Hồ sơ, Kanban, Admin...)
     await loadComponent("layout-content", viewFile);
     
+    // Kích hoạt các hàm logic sau khi nạp giao diện
     if (viewFile === 'views/kanban.html') setupKanbanEvents();
     if (viewFile === 'views/admin-users.html') loadAdminUsers();
     if (viewFile === 'views/admin-trainers.html') setupTrainerEvents();
     if (viewFile === 'views/profile.html') setupProfileEvents();
+    // Module 'views/loadExcel.html' sẽ tự khởi tạo logic qua thẻ script module bên trong nó
 };
-
 // ==========================================
 // HỒ SƠ & ĐỔI MẬT KHẨU
 // ==========================================
