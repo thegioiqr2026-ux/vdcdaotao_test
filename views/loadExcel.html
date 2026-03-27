@@ -2,12 +2,13 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Data Center v2.9</title>
-    <script src="./js/exceljs.min.js"></script>
-    <script src="./js/jszip.min.js"></script>
-    <script src="./js/firebase-config.js" type="module"></script>
+    <title>VDC Data Center v3.3</title>
+    <script src="../js/exceljs.min.js"></script>
+    <script src="../js/jszip.min.js"></script>
+    <script src="../js/firebase-config.js" type="module"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
+        /* Giữ nguyên CSS bản v2.9 */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; overflow: hidden; }
         .sidebar { width: 330px; background: #2c3e50; color: white; padding: 20px; overflow-y: auto; }
         .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
         .form-group { margin-bottom: 15px; }
@@ -24,15 +25,21 @@
 <body>
 
 <div class="sidebar">
-    <h2 style="color:#3498db; text-align:center;">VDC CRM v2.9</h2>
-    <div class="form-group"><label>1. FILE EXCEL:</label><input type="file" id="fileExcel" accept=".xlsx" /></div>
-    <div class="form-group"><label>2. FILE ZIP ẢNH:</label><input type="file" id="fileZip" accept=".zip" /></div>
+    <h2 style="color:#3498db; text-align:center;">VDC CRM v3.3</h2>
+    <div class="form-group">
+        <label>1. FILE EXCEL:</label>
+        <input type="file" id="fileExcel" accept=".xlsx" />
+    </div>
+    <div class="form-group">
+        <label>2. FILE ZIP ẢNH:</label>
+        <input type="file" id="fileZip" accept=".zip" />
+    </div>
     <div style="background: #1a252f; padding: 12px; border-radius: 6px;">
         <input type="text" id="inputMST" placeholder="Mã số thuế..." style="margin-bottom: 10px;">
         <input type="text" id="inputTenCty" placeholder="Tên công ty...">
     </div>
-    <button class="btn" style="background:#3498db;" onclick="docDuLieuPreview()">🔍 XEM TRƯỚC</button>
-    <button id="btnSync" class="btn" style="background:#27ae60; display:none;" onclick="xuatDuLieuLenHethong()">🚀 ĐỒNG BỘ CLOUD</button>
+    <button class="btn" style="background:#3498db;" id="btnPreview">🔍 XEM TRƯỚC</button>
+    <button id="btnSync" class="btn" style="background:#27ae60; display:none;">🚀 ĐỒNG BỘ CLOUD</button>
     <div id="status" style="margin-top:10px; font-size:12px; text-align:center;"></div>
 </div>
 
@@ -51,23 +58,27 @@
 </div>
 
 <script type="module">
-    import { db, ref, set } from './js/firebase-config.js';
+    import { db, ref, set } from '../js/firebase-config.js'; // Đường dẫn tương đối cho Iframe
+    
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
     let globalDataHocVien = [];
 
     function cleanStr(s) { return s ? s.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/\s+/g, "") : ""; }
 
-    window.docDuLieuPreview = async function() {
+    // Gắn sự kiện bằng JS thay vì onclick trong HTML để ổn định hơn
+    document.getElementById('btnPreview').addEventListener('click', async () => {
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
+        const status = document.getElementById('status');
+        
         if (!fileEx) return alert("Chưa chọn file Excel!");
 
+        status.innerText = "⏳ Đang xử lý...";
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(await fileEx.arrayBuffer());
         const sheet = workbook.worksheets[0];
         let data = [];
 
-        // Đọc ZIP
         const anhTuZip = {};
         if (fileZi) {
             const zipData = await JSZip.loadAsync(fileZi);
@@ -81,15 +92,15 @@
         const valA1 = sheet.getCell('A1').text || "";
         const valA3 = sheet.getCell('A3').text || "";
 
-        // MẪU 2: LONG PHƯƠNG (A1 Merge, Tiêu đề Dòng 2-3, Dữ liệu từ Dòng 4)
+        // Logic bóc tách Mẫu 2 (Long Phương)
         if (valA1 && !valA3.includes("Công ty:")) {
             const lines = valA1.split('\n');
             document.getElementById('inputTenCty').value = lines[0].trim();
             const noiDungChung = sheet.getCell('J2').text.trim() || sheet.getCell('J4').text.trim();
 
             sheet.eachRow((row, i) => {
-                if (i >= 4) { // Dữ liệu từ dòng 4
-                    const ten = row.getCell(3).text.trim(); // Họ tên Cột C
+                if (i >= 4) {
+                    const ten = row.getCell(3).text.trim();
                     if (ten) {
                         data.push({
                             stt: data.length+1, hoten: ten, 
@@ -103,7 +114,7 @@
                 }
             });
         } 
-        // MẪU 1: TTHV (Sửa lỗi lệch cột)
+        // Logic bóc tách Mẫu 1 (TTHV)
         else {
             document.getElementById('inputTenCty').value = valA3.replace(/Công ty[:\s]*/gi, "").trim();
             document.getElementById('inputMST').value = sheet.getCell('A4').text.replace(/Mã số thuế[:\s]*/gi, "").trim();
@@ -140,13 +151,16 @@
             tbody.innerHTML += `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
         });
         document.getElementById('btnSync').style.display = 'block';
-    }
+        status.innerText = `✅ Đã bóc tách ${data.length} nhân sự.`;
+    });
 
-    window.xuatDuLieuLenHethong = async function() {
+    document.getElementById('btnSync').addEventListener('click', async () => {
         const mst = document.getElementById('inputMST').value.trim();
         const ten = document.getElementById('inputTenCty').value.trim();
+        const status = document.getElementById('status');
         if (!mst || !ten) return alert("Nhập đủ MST và Tên!");
         
+        status.innerText = "⏳ Đang đồng bộ...";
         for (let s of globalDataHocVien) {
             let driveUrl = "";
             if (s.photo) {
@@ -161,8 +175,8 @@
                 NoiDungHL: s.noidung, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() 
             });
         }
-        alert("✅ Đồng bộ v2.9 thành công!");
-    }
+        status.innerHTML = `<b style="color:green">✅ Đồng bộ v3.3 thành công!</b>`;
+    });
 </script>
 </body>
 </html>
