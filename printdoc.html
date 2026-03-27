@@ -2,79 +2,153 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Trung Tâm Điều Khiển In v1.7</title>
+    <title>Hệ Thống In Biểu Mẫu v1.8</title>
     <script src="./js/exceljs.min.js"></script>
     <style>
-        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 40px; display: flex; justify-content: center; }
+        body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f2f5; padding: 40px; display: flex; justify-content: center; }
         .main-panel { background: white; width: 100%; max-width: 550px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .header { text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 25px; }
         .control-group { margin-bottom: 20px; }
         label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; }
-        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-        .btn-run { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        .btn-run:hover { background: #218838; transform: translateY(-1px); }
+        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn-run { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; }
         #status { margin-top: 20px; text-align: center; font-weight: bold; color: #007bff; }
-        .footer { font-size: 11px; color: #888; text-align: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
+        /* Ẩn vùng in tạm thời */
+        #printTempArea { display: none; }
     </style>
 </head>
 <body>
 
 <div class="main-panel">
-    <div class="header">
-        <h2 style="margin:0;">HỆ THỐNG IN BIỂU MẪU</h2>
-    </div>
-
+    <div class="header"><h2>TRUNG TÂM IN BIỂU MẪU</h2></div>
     <div class="control-group">
         <label>1. Chọn mẫu biểu mẫu:</label>
-        <select id="templatePath">
-            <option value="./doctemplate/printThe44.html">Thẻ ATVSLĐ (9 thẻ/A4 - NĐ44)</option>
-            <option value="./doctemplate/printThe62.html">Thẻ An Toàn Điện (8 thẻ/A4 - NĐ62)</option>
+        <select id="formType">
+            <option value="44">Thẻ ATVSLĐ (9 thẻ/A4 - NĐ44)</option>
+            <option value="62">Thẻ An Toàn Điện (8 thẻ/A4 - NĐ62)</option>
         </select>
     </div>
-
     <div class="control-group">
         <label>2. Chọn dữ liệu Excel:</label>
         <input type="file" id="excelInput" accept=".xlsx">
     </div>
-
-    <button class="btn-run" onclick="startProcessing()">🚀 XỬ LÝ & CHUYỂN TRANG IN</button>
-    
+    <button class="btn-run" onclick="processAndPrint()">🚀 XỬ LÝ & IN NGAY</button>
     <div id="status"></div>
-    <div class="footer">Phiên bản 1.7 | Quản lý biểu mẫu tập trung</div>
+    <div style="font-size: 11px; color: #888; text-align: center; margin-top: 20px;">Phiên bản 1.8 | Fix Quota Error</div>
 </div>
 
+<div id="printTempArea"></div>
+
 <script>
-    async function startProcessing() {
+    async function processAndPrint() {
         const file = document.getElementById('excelInput').files[0];
-        const template = document.getElementById('templatePath').value;
+        const type = document.getElementById('formType').value;
         const status = document.getElementById('status');
 
-        if (!file) return alert("Bạn chưa chọn file Excel dữ liệu!");
+        if (!file) return alert("Vui lòng chọn file Excel!");
+        status.innerText = "⏳ Đang xử lý dữ liệu lớn...";
 
-        status.innerText = "⏳ Đang chuẩn bị dữ liệu...";
+        try {
+            const wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(await file.arrayBuffer());
+            const sh = wb.worksheets[0];
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                // Chuyển đổi dữ liệu ArrayBuffer sang Base64 để lưu vào sessionStorage
-                const uint8 = new Uint8Array(e.target.result);
-                let binary = "";
-                for (let i = 0; i < uint8.length; i++) {
-                    binary += String.fromCharCode(uint8[i]);
+            // 1. Trích xuất thông tin chung
+            let rawDV = sh.getCell('A3').value ? sh.getCell('A3').value.toString() : "";
+            let cleanDV = rawDV.replace(/Công ty[:\s]*/gi, "").trim();
+            let shortName = cleanDV.split(/\s+/).filter(w=>w).map(w=>w[0]).join('').toUpperCase() || "THE";
+            let year = new Date().getFullYear();
+
+            // 2. Lấy ảnh
+            const imgMap = {};
+            sh.getImages().forEach(img => {
+                if (img.range.tl.nativeCol === 8) {
+                    const blob = new Blob([wb.getImage(img.imageId).buffer]);
+                    imgMap[img.range.tl.nativeRow] = URL.createObjectURL(blob);
                 }
-                const base64Data = btoa(binary);
-                
-                // Lưu dữ liệu vào bộ nhớ đệm
-                sessionStorage.setItem('excel_data_buffer', base64Data);
-                
-                // Điều hướng sang trang biểu mẫu đã chọn trong /doctemplate/
-                window.location.href = template;
-            } catch (err) {
-                console.error(err);
-                alert("Lỗi khi đóng gói dữ liệu: " + err.message);
+            });
+
+            // 3. Gom danh sách học viên
+            let students = []; let stt = 1;
+            sh.eachRow((row, i) => {
+                let name = row.getCell(2).value;
+                if (i >= 10 && name) {
+                    students.push({ 
+                        ten: name, 
+                        img: imgMap[i-1] || "", 
+                        code: `Số: ${stt++}/${year}/${shortName}`,
+                        cccd: row.getCell(3).value || "........."
+                    });
+                }
+            });
+
+            // 4. Tạo cửa sổ in và truyền dữ liệu trực tiếp (Không qua sessionStorage)
+            const printWindow = window.open('', '_blank');
+            
+            // Xây dựng nội dung HTML cho trang in
+            let htmlContent = `
+                <html>
+                <head>
+                    <title>In Biểu Mẫu</title>
+                    <style>
+                        @page { size: A4; margin: 0; }
+                        body { margin: 0; padding: 0; font-family: "Times New Roman", serif; }
+                        .grid { display: grid; width: 210mm; height: 297mm; margin: 0 auto; justify-content: center; align-content: center; }
+                        .page-break { page-break-after: always; }
+                        /* Style cho Thẻ 44 */
+                        .grid-44 { grid-template-columns: repeat(3, 62mm); grid-template-rows: repeat(3, 90mm); gap: 5px; }
+                        .card-44 { width: 62mm; height: 90mm; border: 0.1mm solid #ccc; position: relative; display: flex; flex-direction: column; align-items: center; background-image: url('./images/backgroundTheATVSLD.png'); background-size: 100% 100%; text-align: center; padding: 5mm 0; box-sizing: border-box; }
+                        /* Style cho Thẻ 62 */
+                        .grid-62 { grid-template-columns: repeat(2, 85mm); grid-template-rows: repeat(4, 53mm); gap: 10mm 15mm; }
+                        .card-62 { width: 85mm; height: 53mm; background-color: #FFEA00; border: 1.2mm double #CC0000; box-shadow: inset 0 0 0 0.4mm #000; display: flex; flex-direction: column; align-items: center; padding: 3mm 0; box-sizing: border-box; position: relative; }
+                        
+                        .photo { width: 20mm; height: 30mm; border: 0.5px solid #000; background: #fff; overflow: hidden; }
+                        .photo img { width: 100%; height: 100%; object-fit: fill; }
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    </style>
+                </head>
+                <body>`;
+
+            const step = (type === "44") ? 9 : 8;
+            for (let i = 0; i < students.length; i += step) {
+                const chunk = students.slice(i, i + step);
+                htmlContent += `<div class="grid grid-${type} page-break">`;
+                chunk.forEach(s => {
+                    if (type === "44") {
+                        htmlContent += `
+                            <div class="card-44">
+                                <div style="font-size:9pt; font-weight:bold; text-transform:uppercase; height:40px; display:flex; align-items:center;">${cleanDV}</div>
+                                <div style="font-size:10pt; font-weight:bold; color:#003399; margin:5mm 0;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
+                                <div class="photo">${s.img ? `<img src="${s.img}">` : ''}</div>
+                                <div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:10mm;">${s.code}</div>
+                            </div>`;
+                    } else {
+                        htmlContent += `
+                            <div class="card-62">
+                                <div style="font-size:8pt; font-weight:bold; text-transform:uppercase;">${cleanDV}</div>
+                                <div style="font-size:11pt; font-weight:bold; color:#CC0000; margin:2mm 0;">THẺ AN TOÀN ĐIỆN</div>
+                                <div class="photo" style="width:22mm; height:30mm;">${s.img ? `<img src="${s.img}">` : ''}</div>
+                                <div style="font-size:9pt; font-weight:bold; margin-top:2mm;">Số: ${s.cccd}</div>
+                            </div>`;
+                    }
+                });
+                htmlContent += `</div>`;
             }
-        };
-        reader.readAsArrayBuffer(file);
+
+            htmlContent += `</body></html>`;
+            
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            
+            // Đợi ảnh tải xong rồi mới in
+            printWindow.onload = function() {
+                printWindow.print();
+                status.innerText = "✅ Đã in thành công!";
+            };
+
+        } catch (e) {
+            status.innerText = "❌ Lỗi: " + e.message;
+        }
     }
 </script>
 </body>
