@@ -2,38 +2,51 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Thông tin học viên v4.0</title>
+    <title>VDC Thông tin học viên v4.1</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
     <style>
+        /* Giao diện tinh gọn, loại bỏ Header/Footer để nhúng Iframe chuyên nghiệp */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #fff; overflow: hidden; }
         .sidebar-in { width: 300px; background: #f8fafc; border-right: 1px solid #e2e8f0; padding: 15px; overflow-y: auto; flex-shrink: 0; }
         .main-content { flex: 1; padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 12px; color: #64748b; }
         input[type="file"], input[type="text"] { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box; }
-        .table-container { flex: 1; border: 1px solid #e2e8f0; border-radius: 4px; overflow: auto; }
+        
+        .table-container { flex: 1; border: 1px solid #e2e8f0; border-radius: 4px; overflow: auto; background: #fff; }
         table { width: 100%; border-collapse: collapse; min-width: 1600px; }
-        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 6px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
-        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; font-size: 13px; }
-        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
-        #status { margin-top: 8px; font-size: 11px; text-align: center; color: #64748b; }
+        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; z-index: 10; }
+        td { padding: 6px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #334155; }
+        
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; font-size: 13px; transition: 0.2s; }
+        .btn-preview { background: #3b82f6; }
+        .btn-sync { background: #10b981; display: none; }
+        .btn:hover { opacity: 0.9; }
+        
+        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; border: 1px solid #e2e8f0; }
+        #status { margin-top: 8px; font-size: 11px; text-align: center; color: #64748b; font-weight: 500; }
     </style>
 </head>
 <body>
 
 <div class="sidebar-in">
-    <div class="form-group"><label>1. FILE EXCEL:</label><input type="file" id="fileExcel" accept=".xlsx" /></div>
-    <div class="form-group"><label>2. FILE ZIP ẢNH:</label><input type="file" id="fileZip" accept=".zip" /></div>
-    <div style="background: #f1f5f9; padding: 10px; border-radius: 4px;">
+    <div class="form-group"><label>1. FILE EXCEL DANH SÁCH:</label><input type="file" id="fileExcel" accept=".xlsx" /></div>
+    <div class="form-group"><label>2. FILE ZIP HÌNH ẢNH:</label><input type="file" id="fileZip" accept=".zip" /></div>
+    
+    <div style="background: #f1f5f9; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 5px;">
+        <label style="color: #475569;">THÔNG TIN ĐƠN VỊ:</label>
         <input type="text" id="inputMST" placeholder="Nhập Mã số thuế..." style="margin-bottom: 8px;">
         <input type="text" id="inputTenCty" placeholder="Tên công ty tự động...">
     </div>
-    <button class="btn" style="background:#3b82f6;" id="btnPreview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
-    <button id="btnSync" class="btn" style="background:#10b981; display:none;">🚀 ĐỒNG BỘ HỆ THỐNG</button>
+
+    <button class="btn btn-preview" id="btnPreview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
+    <button id="btnSync" class="btn btn-sync">🚀 ĐỒNG BỘ VDC CLOUD</button>
+    
     <div id="status"></div>
+    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 15px;">Phiên bản hệ thống v4.1</p>
 </div>
 
 <div class="main-content">
@@ -63,13 +76,12 @@
         const status = document.getElementById('status');
         if (!fileEx) return alert("Vui lòng chọn file Excel!");
 
-        status.innerText = "⏳ Đang trích xuất v4.0...";
+        status.innerText = "⏳ Đang bóc tách dữ liệu v4.1...";
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(await fileEx.arrayBuffer());
         const sheet = workbook.worksheets[0];
         let data = [];
 
-        // Xử lý ảnh ZIP
         const anhTuZip = {};
         if (fileZi) {
             const zipData = await JSZip.loadAsync(fileZi);
@@ -83,36 +95,34 @@
         const valA1 = sheet.getCell('A1').text || "";
         const valA3 = sheet.getCell('A3').text || "";
 
-        // PHÂN TÁCH LOGIC MẪU 2 (LONG PHƯƠNG) DỰA TRÊN ẢNH MỚI
+        // XỬ LÝ MẪU 2: CTY LONG PHƯƠNG (Dữ liệu từ dòng 3)
         if (valA1 && !valA3.includes("Công ty:")) {
             const lines = valA1.split('\n');
             document.getElementById('inputTenCty').value = lines[0].trim();
 
             sheet.eachRow((row, i) => {
-                // Theo ảnh mới: Dữ liệu bắt đầu ngay từ dòng 3
                 if (i >= 3) { 
-                    const sttVal = row.getCell(1).text.trim(); // Cột A
-                    const hoTenVal = row.getCell(3).text.trim(); // Cột C
-                    
+                    const sttVal = row.getCell(1).text.trim();
+                    const hoTenVal = row.getCell(3).text.trim();
                     if ((sttVal || hoTenVal) && hoTenVal !== "Họ và tên") {
                         data.push({
                             stt: data.length + 1,
-                            manv: row.getCell(2).text.trim(),   // Cột B
-                            hoten: hoTenVal,                   // Cột C
-                            congviec: row.getCell(4).text.trim(),// Cột D
-                            cccd: row.getCell(5).text.trim(),    // Cột E
-                            ngaysinh: row.getCell(6).text,       // Cột F
-                            gioitinh: row.getCell(7).text,       // Cột G
-                            quoctich: row.getCell(8).text,       // Cột H
-                            donvi: row.getCell(9).text.trim(),   // Cột I
-                            noidung: row.getCell(10).text.trim(),// Cột J
+                            manv: row.getCell(2).text.trim(),   
+                            hoten: hoTenVal,                   
+                            congviec: row.getCell(4).text.trim(),
+                            cccd: row.getCell(5).text.trim(),    
+                            ngaysinh: row.getCell(6).text,       
+                            gioitinh: row.getCell(7).text,       
+                            quoctich: row.getCell(8).text,       
+                            donvi: row.getCell(9).text.trim(),   
+                            noidung: row.getCell(10).text.trim(),
                             photo: anhTuZip[cleanStr(hoTenVal)] || null
                         });
                     }
                 }
             });
         } 
-        // MẪU 1: TTHV
+        // XỬ LÝ MẪU 1: TTHV (Dòng 10, Ảnh cột I)
         else {
             document.getElementById('inputTenCty').value = valA3.replace(/Công ty[:\s]*/gi, "").trim();
             document.getElementById('inputMST').value = sheet.getCell('A4').text.replace(/Mã số thuế[:\s]*/gi, "").trim();
@@ -148,15 +158,15 @@
             tbody.innerHTML += `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
         });
         document.getElementById('btnSync').style.display = 'block';
-        status.innerText = `✅ Đã trích xuất thành công ${data.length} nhân sự.`;
+        status.innerText = `✅ Đã trích xuất ${data.length} nhân sự.`;
     });
 
     document.getElementById('btnSync').addEventListener('click', async () => {
         const mst = document.getElementById('inputMST').value.trim();
         const ten = document.getElementById('inputTenCty').value.trim();
-        if (!mst || !ten) return alert("Vui lòng nhập Mã số thuế để định danh hệ thống!");
+        if (!mst || !ten) return alert("Cần nhập Mã số thuế để đồng bộ!");
         
-        document.getElementById('status').innerText = "⏳ Đang thực hiện đồng bộ Cloud...";
+        document.getElementById('status').innerText = "⏳ Đang đồng bộ Cloud...";
         for (let s of globalDataHocVien) {
             let driveUrl = "";
             if (s.photo) {
@@ -171,7 +181,7 @@
                 NoiDungHL: s.noidung, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() 
             });
         }
-        document.getElementById('status').innerHTML = `<b style="color:green">✅ Đồng bộ v4.0 hoàn tất!</b>`;
+        document.getElementById('status').innerHTML = `<b style="color:green">✅ Đồng bộ v4.1 thành công!</b>`;
     });
 </script>
 </body>
