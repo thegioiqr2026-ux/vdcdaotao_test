@@ -2,11 +2,15 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống In Ấn Chuyên Nghiệp</title>
+    <title>Hệ Thống In Thẻ & Giấy Chứng Nhận - Nhân Viên</title>
+    
     <script src="./js/exceljs.min.js"></script>
+    <script src="./js/jszip.min.js"></script>
+    
     <style>
         @page { size: A4; margin: 0; }
         @page cert { size: 130mm 190mm; margin: 0; }
+
         @media print {
             .no-print { display: none; }
             body { background: none; margin: 0; padding: 0; }
@@ -14,99 +18,166 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .is-cert { page: cert; }
         }
-        body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 20px; background: #f4f7f9; }
-        .no-print { background: white; padding: 20px; border-radius: 8px; margin: 0 auto 20px auto; max-width: 900px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        body { font-family: "Times New Roman", Times, serif; background: #f4f7f9; margin: 0; padding: 20px; }
+        .no-print { background: white; padding: 25px; border-radius: 12px; margin: 0 auto 30px auto; max-width: 800px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        
+        .header-title { color: #2c3e50; text-align: center; margin-bottom: 25px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .upload-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-weight: bold; margin-bottom: 8px; color: #34495e; font-size: 14px; }
+        
         .grid-container { display: grid; margin: 0 auto; background: white; justify-content: center; align-content: center; }
         
-        /* Định dạng 3 loại biểu mẫu */
-        .grid-9 { width: 210mm; height: 297mm; grid-template-columns: repeat(3, 62mm); grid-template-rows: repeat(3, 90mm); gap: 5px; }
-        .grid-8 { width: 210mm; height: 297mm; grid-template-columns: repeat(2, 85mm); grid-template-rows: repeat(4, 53mm); gap: 10mm 5mm; }
-        .grid-1 { width: 130mm; height: 190mm; grid-template-columns: 130mm; grid-template-rows: 190mm; }
-
-        .card { box-sizing: border-box; position: relative; overflow: hidden; border: 0.1mm solid #000; display: flex; flex-direction: column; justify-content: center; text-align: center; }
-        .photo-box { border: 1px solid #000; margin: 0 auto; background: #fff; width: 25mm; height: 35mm; overflow: hidden; }
+        /* Cấu trúc mặc định (Sẽ được ghi đè bởi cấu hình Admin nếu có) */
+        .card { box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .photo-box { border: 1px solid #000; margin: 0 auto; background: #fff; display: flex; align-items: center; justify-content: center; }
         img.avatar { width: 100%; height: 100%; object-fit: cover; }
-        .btn-action { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+
+        .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        button { padding: 12px 25px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .btn-process { background: #27ae60; color: white; }
+        .btn-print { background: #2980b9; color: white; display: none; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        #status { text-align: center; font-weight: bold; margin-top: 15px; min-height: 20px; }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <h2>🛠 CẤU HÌNH IN (GitHub Mode)</h2>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <select id="formType" style="padding: 10px;">
-            <option value="9">Thẻ ATVSLĐ (9 thẻ/A4)</option>
-            <option value="8">Thẻ An Toàn Điện (8 thẻ/A4 - Vàng)</option>
-            <option value="1">Giấy Chứng Nhận (Phôi 13x19cm)</option>
-        </select>
-        <input type="file" id="excelInput" accept=".xlsx">
-        <button class="btn-action" style="background: #28a745; color: white;" onclick="runProcess()">🚀 TRÍCH XUẤT</button>
-        <button class="btn-action" style="background: #007bff; color: white;" onclick="window.print()">🖨️ IN NGAY</button>
+    <h2 class="header-title">CÔNG CỤ IN BIỂU MẪU ĐÀO TẠO</h2>
+    
+    <div class="upload-section">
+        <div class="input-group">
+            <label>1. Chọn loại biểu mẫu cần in:</label>
+            <select id="formType" style="padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="9">Thẻ ATVSLĐ Nhóm 3 (9 thẻ/A4)</option>
+                <option value="8">Thẻ An Toàn Điện (8 thẻ/A4)</option>
+                <option value="1">Giấy Chứng Nhận (Phôi 13x19cm)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>2. Tải File Excel (Dòng 10+, Cột I có ảnh):</label>
+            <input type="file" id="excelInput" accept=".xlsx">
+        </div>
+        <div class="input-group">
+            <label>3. Tải File ZIP Ảnh (Nếu Excel không có ảnh):</label>
+            <input type="file" id="zipInput" accept=".zip">
+        </div>
     </div>
-    <p id="status" style="margin-top: 10px; color: blue; font-weight: bold;"></p>
+
+    <div class="btn-group">
+        <button class="btn-process" onclick="handleData()">🚀 TRÍCH XUẤT DỮ LIỆU</button>
+        <button class="btn-print" id="btnPrint" onclick="window.print()">🖨️ IN NGAY</button>
+    </div>
+    
+    <div id="status"></div>
 </div>
 
 <div id="printArea"></div>
 
 <script>
-    async function runProcess() {
-        const file = document.getElementById('excelInput').files[0];
-        const type = parseInt(document.getElementById('formType').value);
-        const status = document.getElementById('status');
-        if (!file) return alert("Vui lòng chọn file Excel!");
+    const CONFIG_KEY = "CONFIG_IN_THE_";
+    const defaultConfigs = {
+        "9": { w: 62, h: 90, fs: 12, bg: "#ffffff", it: 10, iw: 30, ih: 40, col: 3 },
+        "8": { w: 85, h: 53, fs: 11, bg: "#ffea00", it: 5, iw: 22, ih: 30, col: 2 },
+        "1": { w: 130, h: 190, fs: 15, bg: "transparent", it: 20, iw: 30, ih: 40, col: 1 }
+    };
 
-        status.innerText = "⏳ Đang trích xuất...";
+    function cleanName(s) {
+        return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().replace(/\s+/g, "");
+    }
+
+    async function handleData() {
+        const fileEx = document.getElementById('excelInput').files[0];
+        const fileZip = document.getElementById('zipInput').files[0];
+        const type = document.getElementById('formType').value;
+        const status = document.getElementById('status');
         const area = document.getElementById('printArea');
+        
+        if (!fileEx) return alert("Vui lòng chọn file Excel!");
+        
         area.innerHTML = "";
+        status.innerText = "⏳ Đang xử lý dữ liệu...";
+        status.style.color = "orange";
 
         try {
+            // Nạp cấu hình từ Admin (nếu có), không thì dùng mặc định
+            const saved = localStorage.getItem(CONFIG_KEY + type);
+            const cfg = saved ? JSON.parse(saved) : defaultConfigs[type];
+
+            // 1. Xử lý ảnh (từ ZIP hoặc Excel)
+            let imgMap = {};
+            if (fileZip) {
+                const zip = await JSZip.loadAsync(fileZip);
+                for (let name in zip.files) {
+                    if (name.match(/\.(jpg|jpeg|png)$/i)) {
+                        const blob = await zip.files[name].async("blob");
+                        const clean = cleanName(name.split('/').pop().split('.').shift());
+                        imgMap["zip_" + clean] = URL.createObjectURL(blob);
+                    }
+                }
+            }
+
             const wb = new ExcelJS.Workbook();
-            await wb.xlsx.load(await file.arrayBuffer());
+            await wb.xlsx.load(await fileEx.arrayBuffer());
             const sh = wb.worksheets[0];
 
-            // 1. Lấy ảnh từ cột I (index 8) [cite: 2]
-            const imgMap = {};
             sh.getImages().forEach(img => {
-                if (img.range.tl.nativeCol === 8) {
+                if (img.range.tl.nativeCol === 8) { // Cột I
                     const blob = new Blob([wb.getImage(img.imageId).buffer]);
-                    imgMap[img.range.tl.nativeRow] = URL.createObjectURL(blob);
+                    imgMap["ex_" + img.range.tl.nativeRow] = URL.createObjectURL(blob);
                 }
             });
 
-            // 2. Đọc dữ liệu từ dòng 10 [cite: 1]
+            // 2. Trích xuất text từ dòng 10
             let list = []; let grp = "";
             sh.eachRow((row, i) => {
                 if (i >= 10) {
-                    const a = row.getCell(1).text.trim(); // Cột A: Đơn vị
-                    const b = row.getCell(2).text.trim(); // Cột B: Họ tên
-                    const c = row.getCell(3).text.trim(); // Cột C: CCCD
-                    if (a && !b) grp = a;
-                    else if (b) list.push({ dv: grp, ten: b, cccd: c, img: imgMap[i-1] || "" });
+                    const dv = row.getCell(1).text.trim();
+                    const ten = row.getCell(2).text.trim();
+                    const cccd = row.getCell(3).text.trim();
+                    if (dv && !ten) grp = dv;
+                    else if (ten) {
+                        const imgEx = imgMap["ex_" + (i-1)];
+                        const imgZip = imgMap["zip_" + cleanName(ten)] || imgMap["zip_" + cleanName(cccd)];
+                        list.push({ dv: grp, ten: ten, cccd: cccd, img: imgEx || imgZip || "" });
+                    }
                 }
             });
 
             // 3. Dàn trang
-            const step = (type === 1) ? 1 : type;
+            const step = (type === "1") ? 1 : parseInt(type);
             for (let i = 0; i < list.length; i += step) {
                 const chunk = list.slice(i, i + step);
                 const page = document.createElement('div');
-                page.className = `grid-container grid-${type} page-break ${type === 1 ? 'is-cert' : ''}`;
+                page.className = `grid-container page-break ${type === "1" ? 'is-cert' : ''}`;
+                page.style.gridTemplateColumns = `repeat(${cfg.col || (type==="9"?3:2)}, ${cfg.w}mm)`;
                 
                 chunk.forEach(s => {
-                    const bgColor = (type === 8) ? "#FFEA00" : "#ffffff";
+                    const bgStyle = (type === "9" && cfg.bgImg) ? `background-image:url('${cfg.bgImg}')` : `background-color:${cfg.bg}`;
                     page.innerHTML += `
-                        <div class="card" style="background-color: ${bgColor}">
-                            <div style="font-size: 8pt; font-weight: bold;">${s.dv}</div>
-                            <div style="font-weight: bold; margin: 2px 0;">${type === 1 ? 'GIẤY CHỨNG NHẬN' : 'THẺ AN TOÀN'}</div>
-                            <div class="photo-box">${s.img ? `<img class="avatar" src="${s.img}">` : ''}</div>
-                            <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">${s.ten}</div>
-                            <div style="font-size: 10pt;">Số: ${s.cccd}</div>
+                        <div class="card" style="width:${cfg.w}mm; height:${cfg.h}mm; ${bgStyle}; border:${type==='1'?'0':'0.1mm solid #000'}">
+                            <div style="font-size:8pt; font-weight:bold; padding-top:5px;">${s.dv}</div>
+                            <div style="font-weight:bold; margin:2px 0;">${type==="1"?'GIẤY CHỨNG NHẬN':'THẺ AN TOÀN'}</div>
+                            <div class="photo-box" style="margin-top:${cfg.it}mm; width:${cfg.iw}mm; height:${cfg.ih}mm;">
+                                ${s.img ? `<img src="${s.img}">` : ''}
+                            </div>
+                            <div style="font-weight:bold; font-size:${cfg.fs}pt; text-transform:uppercase; margin-top:5px;">${s.ten}</div>
+                            <div style="font-weight:bold; font-size:10pt;">Số: ${s.cccd}</div>
                         </div>`;
                 });
                 area.appendChild(page);
             }
-            status.innerText = `✅ Đã trích xuất ${list.length} nhân viên.`;
-        } catch (e) { status.innerText = "❌ Lỗi: " + e.message; }
+
+            status.innerText = `✅ Đã sẵn sàng in ${list.length} học viên.`;
+            status.style.color = "green";
+            document.getElementById('btnPrint').style.display = "block";
+        } catch (e) {
+            status.innerText = "❌ Lỗi: " + e.message;
+            status.style.color = "red";
+        }
     }
 </script>
 </body>
