@@ -13,6 +13,24 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         ::-webkit-scrollbar-track { background: transparent; }
+        /* Trạng thái mặc định của Sidebar khi thu gọn */
+        #layout-sidebar { 
+            width: 64px; 
+            overflow: hidden; 
+            white-space: nowrap; 
+        }
+        /* Khi di chuột vào hoặc khi được yêu cầu mở rộng */
+        #layout-sidebar:hover, #layout-sidebar.expanded { 
+            width: 260px; 
+        }
+        /* Điều chỉnh vùng nội dung chính linh hoạt */
+        .main-container {
+            margin-left: 64px;
+            transition: margin-left 0.3s;
+        }
+        #layout-sidebar:hover + .main-container, #layout-sidebar.expanded + .main-container {
+            margin-left: 260px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-screen flex overflow-hidden hidden" id="appBody">
