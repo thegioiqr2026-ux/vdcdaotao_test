@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hệ thống In Thẻ ATVSLĐ - Bản Xem Trước</title>
+    
+    <script src="./exceljs.min.js"></script>
+    <script src="./jszip.min.js"></script>
+    <script src="./pizzip.min.js"></script>
+    <script src="./docxtemplater.min.js"></script>
+    <script src="./imagemodule.min.js"></script>
+    <script src="./FileSaver.min.js"></script>
+    
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+        
+        /* Chia màn hình */
+        .container { display: flex; height: 100vh; }
+        
+        /* Phần bên trái: 30% */
+        .sidebar { width: 30%; background: #2c3e50; color: white; padding: 20px; box-sizing: border-box; border-right: 2px solid #1a252f; overflow-y: auto; }
+        
+        /* Phần bên phải: 70% */
+        .main-content { width: 70%; background: #ecf0f1; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+        
+        .sidebar h2 { color: #3498db; text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
+        input[type="file"] { width: 100%; color: #bdc3c7; }
+
+        /* Bảng hiển thị thông tin */
+        .table-container { flex-grow: 1; background: white; border-radius: 8px; overflow: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #34495e; color: white; position: sticky; top: 0; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; vertical-align: middle; }
+        tr:hover { background: #f1f1f1; }
+        
+        .preview-img { width: 60px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; display: block; }
+
+        /* Nút điều khiển */
+        .btn-action { padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-top: 10px; }
+        .btn-preview { background: #3498db; color: white; }
+        .btn-preview:hover { background: #2980b9; }
+        .btn-export { background: #27ae60; color: white; font-size: 18px; display: none; margin-top: 20px; }
+        .btn-export:hover { background: #219150; }
+        
+        #status { font-size: 13px; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <h2>CÀI ĐẶT FILE</h2>
+        
+        <div class="form-group">
+            <label>1. Danh sách Excel (Bắt buộc):</label>
+            <input type="file" id="fileExcel" accept=".xlsx" />
+        </div>
+
+        <div class="form-group">
+            <label>2. File ZIP Ảnh (Nếu có):</label>
+            <input type="file" id="fileZip" accept=".zip" />
+        </div>
+
+        <div class="form-group">
+            <label>3. Phôi Word (Bắt buộc):</label>
+            <input type="file" id="fileTemplate" accept=".docx" />
+        </div>
+
+        <button class="btn-action btn-preview" onclick="docDuLieuPreview()">🔍 XEM TRƯỚC DỮ LIỆU</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <div class="main-content">
+        <h3 style="margin-top: 0; color: #2c3e50;">BẢNG THÔNG TIN NHÂN VIÊN</h3>
+        
+        <div class="table-container">
+            <table id="previewTable">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Nhóm/Đơn vị</th>
+                        <th>Họ và Tên</th>
+                        <th>CCCD</th>
+                        <th style="width: 80px;">Hình ảnh</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+        <button id="btnExport" class="btn-action btn-export" onclick="xuatFileWord()">📥 XUẤT FILE WORD NGAY</button>
+    </div>
+</div>
+
+<script>
+    let globalDataHocVien = []; // Lưu trữ dữ liệu để dùng chung
+
+    function xoaDau(str) {
+        if (!str) return "";
+        return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/\s+/g, '-');
+    }
+
+    const blankImageBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+    async function docDuLieuPreview() {
+        const fileExcel = document.getElementById('fileExcel').files[0];
+        const fileZip = document.getElementById('fileZip').files[0];
+        const status = document.getElementById('status');
+        const tbody = document.querySelector('#previewTable tbody');
+        
+        if (!fileExcel) return alert("Vui lòng chọn file Excel!");
+        
+        status.innerText = "⏳ Đang đọc dữ liệu...";
+        tbody.innerHTML = "";
+        globalDataHocVien = [];
+
+        try {
+            // 1. Đọc ZIP
+            const anhTuZip = [];
+            if (fileZip) {
+                const zipData = await JSZip.loadAsync(fileZip);
+                for (let filename in zipData.files) {
+                    if (filename.match(/\.(jpg|jpeg|png)$/i)) {
+                        const buffer = await zipData.files[filename].async("arraybuffer");
+                        const nameOnly = filename.split('/').pop().split('.').slice(0,-1).join('.');
+                        anhTuZip.push({ tenChuanHoa: xoaDau(nameOnly), buffer });
+                    }
+                }
+            }
+
+            // 2. Đọc Excel
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(await fileExcel.arrayBuffer());
+            const sheet = workbook.worksheets[0];
+
+            // Lấy ảnh từ Excel
+            const anhTuExcel = {};
+            sheet.getImages().forEach(img => {
+                const rowIndex = img.range.tl.nativeRow;
+                anhTuExcel[rowIndex] = workbook.getImage(img.imageId).buffer;
+            });
+
+            let currentGroup = "";
+            let count = 1;
+
+            sheet.eachRow((row, rowNumber) => {
+                if (rowNumber >= 10) {
+                    const colA = row.getCell(1).text.trim();
+                    const hoTen = row.getCell(2).text.trim();
+                    const cccd = row.getCell(3).text.trim();
+
+                    if (colA && !hoTen) currentGroup = colA;
+                    else if (hoTen) {
+                        let photo = null;
+                        if (anhTuExcel[rowNumber - 1]) photo = anhTuExcel[rowNumber - 1];
+                        else {
+                            const match = anhTuZip.find(a => a.tenChuanHoa.includes(xoaDau(hoTen)) || (cccd && a.tenChuanHoa.includes(xoaDau(cccd))));
+                            if (match) photo = match.buffer;
+                        }
+
+                        const rowData = { 
+                            stt: count++, 
+                            donvi: currentGroup, 
+                            hoten: hoTen, 
+                            cccd: cccd, 
+                            photo: photo || null 
+                        };
+                        globalDataHocVien.push(rowData);
+
+                        // Hiển thị lên bảng
+                        const tr = document.createElement('tr');
+                        const imgTag = photo ? `<img class="preview-img" src="${URL.createObjectURL(new Blob([photo]))}">` : `<span style="color:red">Thiếu</span>`;
+                        tr.innerHTML = `<td>${rowData.stt}</td><td>${rowData.donvi}</td><td>${rowData.hoten}</td><td>${rowData.cccd}</td><td>${imgTag}</td>`;
+                        tbody.appendChild(tr);
+                    }
+                }
+            });
+
+            if (globalDataHocVien.length > 0) {
+                document.getElementById('btnExport').style.display = 'block';
+                status.innerHTML = `<b style="color:#2ecc71">✅ Tìm thấy ${globalDataHocVien.length} người.</b>`;
+            } else {
+                status.innerHTML = `<b style="color:#e74c3c">❌ Không có dữ liệu từ dòng 10.</b>`;
+            }
+
+        } catch (e) {
+            alert("Lỗi: " + e.message);
+        }
+    }
+
+    async function xuatFileWord() {
+        const fileTemplate = document.getElementById('fileTemplate').files[0];
+        if (!fileTemplate) return alert("Vui lòng chọn phôi Word!");
+
+        const status = document.getElementById('status');
+        status.innerText = "⏳ Đang tạo file Word...";
+
+        try {
+            const pages = [];
+            const blankBuffer = Uint8Array.from(atob(blankImageBase64), c => c.charCodeAt(0)).buffer;
+
+            for (let i = 0; i < globalDataHocVien.length; i += 9) {
+                const chunk = globalDataHocVien.slice(i, i + 9);
+                const pageData = {};
+                for (let j = 1; j <= 9; j++) {
+                    const h = chunk[j - 1];
+                    pageData[`Don_vi_${j}`] = h ? h.donvi : "";
+                    pageData[`CCCD_${j}`] = h ? h.cccd : "";
+                    pageData[`Photo_${j}`] = h && h.photo ? h.photo : blankBuffer;
+                }
+                pages.push(pageData);
+            }
+
+            const zip = new PizZip(await fileTemplate.arrayBuffer());
+            const doc = new docxtemplater(zip, {
+                paragraphLoop: true, linebreaks: true,
+                modules: [new ImageModule({
+                    getImage: (tag) => tag,
+                    getSize: () => [75, 100]
+                })]
+            });
+
+            doc.render({ pages });
+            saveAs(doc.getZip().generate({ type: "blob" }), "DanhSachThe_ATVSLD.docx");
+            status.innerText = "✅ Đã tải file về máy!";
+        } catch (e) {
+            alert("Lỗi xuất file: " + e.message);
+        }
+    }
+</script>
+</body>
+</html>
