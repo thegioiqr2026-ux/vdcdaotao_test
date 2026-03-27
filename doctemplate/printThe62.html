@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>In Thẻ An Toàn Điện (NĐ62) - Biểu mẫu</title>
+    <script src="../js/exceljs.min.js"></script>
+    <style>
+        @page { size: A4; margin: 0; }
+        @media print {
+            .no-print { display: none; }
+            body { background: none; margin: 0; padding: 0; }
+            .page-break { page-break-after: always; display: block; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+        body { font-family: "Times New Roman", Times, serif; margin: 0; padding: 0; }
+        .grid-8 { 
+            display: grid; width: 210mm; height: 297mm; 
+            grid-template-columns: repeat(2, 85mm); 
+            grid-template-rows: repeat(4, 53mm); 
+            gap: 10mm 15mm; margin: 0 auto; justify-content: center; align-content: center;
+        }
+        .card { 
+            width: 85mm; height: 53mm; background-color: #FFEA00;
+            border: 1.2mm double #CC0000; box-shadow: inset 0 0 0 0.4mm #000;
+            display: flex; flex-direction: column; align-items: center; padding: 3mm 0; box-sizing: border-box;
+        }
+        .info-dv { font-size: 8pt; font-weight: bold; text-transform: uppercase; height: 25px; display: flex; align-items: center; }
+        .info-title { font-size: 11pt; font-weight: bold; color: #CC0000; margin: 2mm 0; }
+        .photo-box { width: 22mm; height: 30mm; border: 0.5px solid #000; background: #fff; }
+        img.avatar { width: 100%; height: 100%; object-fit: fill; }
+        .info-code { font-size: 9pt; font-weight: bold; margin-top: 2mm; }
+        .btn-back { position: fixed; top: 10px; left: 10px; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; z-index: 9999; }
+    </style>
+</head>
+<body>
+    <button class="btn-back no-print" onclick="window.location.href='../printdoc.html'">⬅ Quay lại</button>
+    <div id="printArea"></div>
+
+    <script>
+        window.onload = async function() {
+            const dataBase64 = sessionStorage.getItem('excel_data_buffer');
+            if (!dataBase64) return alert("Không có dữ liệu!");
+
+            try {
+                const binaryString = atob(dataBase64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+                const wb = new ExcelJS.Workbook();
+                await wb.xlsx.load(bytes.buffer);
+                const sh = wb.worksheets[0];
+
+                let cleanDV = (sh.getCell('A3').value || "").toString().replace(/Công ty[:\s]*/gi, "").trim();
+
+                const imgMap = {};
+                sh.getImages().forEach(img => {
+                    if (img.range.tl.nativeCol === 8) {
+                        imgMap[img.range.tl.nativeRow] = URL.createObjectURL(new Blob([wb.getImage(img.imageId).buffer]));
+                    }
+                });
+
+                let students = [];
+                sh.eachRow((row, i) => {
+                    let name = row.getCell(2).value;
+                    let cccd = row.getCell(3).value;
+                    if (i >= 10 && name) {
+                        students.push({ img: imgMap[i-1] || "", code: cccd ? `Số: ${cccd}` : "Số: ........." });
+                    }
+                });
+
+                const area = document.getElementById('printArea');
+                for (let i = 0; i < students.length; i += 8) {
+                    const chunk = students.slice(i, i + 8);
+                    const page = document.createElement('div');
+                    page.className = "grid-8 page-break";
+                    chunk.forEach(s => {
+                        page.innerHTML += `
+                            <div class="card">
+                                <div class="info-dv">${cleanDV}</div>
+                                <div class="info-title">THẺ AN TOÀN ĐIỆN</div>
+                                <div class="photo-box">${s.img ? `<img class="avatar" src="${s.img}">` : ''}</div>
+                                <div class="info-code">${s.code}</div>
+                            </div>`;
+                    });
+                    area.appendChild(page);
+                }
+                window.print();
+            } catch (e) { alert("Lỗi: " + e.message); }
+        };
+    </script>
+</body>
+</html>
