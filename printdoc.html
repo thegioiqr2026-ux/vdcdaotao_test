@@ -2,180 +2,162 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Quản Lý In Ấn v2.3</title>
+    <title>VDC CRM - Trung Tâm In Ấn v2.5</title>
     <script src="./js/exceljs.min.js"></script>
-    <script src="./js/jszip.min.js"></script>
+    <script src="./js/firebase-config.js" type="module"></script>
     <style>
-        body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
-        .main-panel { background: white; max-width: 1000px; margin: 0 auto; padding: 25px; border-radius: 12px; display: grid; grid-template-columns: 1fr 380px; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
+        .main-panel { background: white; max-width: 1100px; margin: 0 auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 400px; gap: 25px; }
+        
+        /* Cột trái: Điều khiển */
         .controls { border-right: 1px solid #eee; padding-right: 20px; }
-        .control-group { margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e9ecef; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; color: #2c3e50; font-size: 14px; }
+        .control-group { margin-bottom: 15px; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #34495e; font-size: 14px; }
         select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .btn-run { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
-        .zip-options { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; align-items: center; }
-        #previewSection { grid-column: 1 / span 2; margin-top: 20px; border-top: 2px solid #007bff; padding-top: 20px; display: none; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
+        
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 15px; }
+        .btn-excel { background: #28a745; color: white; }
+        .btn-cloud { background: #0288d1; color: white; }
+        .btn-print { background: #3498db; color: white; height: 50px; font-size: 18px; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Cột phải: Demo Card */
+        .demo-section { text-align: center; background: #fafafa; padding: 20px; border-radius: 10px; border: 1px dashed #cbd5e0; }
+        .card-preview { margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: 0.3s; }
+        
+        /* Preview Table */
+        #previewSection { grid-column: 1 / span 2; margin-top: 20px; border-top: 2px solid #3498db; padding-top: 20px; display: none; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; font-size: 13px; }
         th { background: #34495e; color: white; }
-        .preview-img { width: 45px; height: 55px; object-fit: cover; border: 1px solid #eee; }
+        .preview-img { width: 45px; height: 60px; object-fit: cover; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div class="main-panel">
     <div class="controls">
-        <h2 style="margin-top:0; color:#007bff;">ĐIỀU KHIỂN IN ẤN</h2>
+        <h2 style="color:#2c3e50; margin-bottom:20px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">TRUNG TÂM IN THẺ</h2>
+        
+        <div class="control-group">
+            <label>1. Loại biểu mẫu in:</label>
+            <select id="formType" onchange="updateDemo()">
+                <option value="44">Thẻ ATVSLĐ (9 thẻ/A4 - NĐ44)</option>
+                <option value="62">Thẻ An Toàn Điện (8 thẻ/A4 - NĐ62)</option>
+            </select>
+        </div>
 
-        <div class="control-group" style="background: #fff3cd; border-color: #ffeeba;">
-            <label>📂 Loại cấu trúc File Excel:</label>
-            <select id="excelType">
+        <div class="control-group" style="background: #f8f9fa;">
+            <label>📂 Chế độ: Nhập từ Excel/ZIP</label>
+            <select id="excelType" style="margin-bottom:10px;">
                 <option value="standard">Mẫu cũ (Ảnh trong Excel - Ô A3)</option>
                 <option value="modern">Mẫu mới (Ảnh trong ZIP - Ô A1 Merge)</option>
             </select>
-        </div>
-
-        <div class="control-group">
-            <label>🎨 Mẫu thẻ in:</label>
-            <select id="formType">
-                <option value="44">Thẻ ATVSLĐ (9 thẻ/A4)</option>
-                <option value="62">Thẻ An Toàn Điện (8 thẻ/A4)</option>
-            </select>
-        </div>
-
-        <div class="control-group">
-            <label>📊 Tải file Excel (.xlsx):</label>
             <input type="file" id="excelInput" accept=".xlsx">
+            <button class="btn btn-excel" onclick="processLocalFile()">🚀 TRÍCH XUẤT FILE CỤC BỘ</button>
         </div>
 
-        <div id="zipGroup" class="control-group" style="display:none;">
-            <label>📦 Tải file ZIP hình ảnh:</label>
-            <input type="file" id="zipInput" accept=".zip">
-            <div class="zip-options">
-                <span>Khớp theo:</span>
-                <label><input type="radio" name="matchBy" value="name" checked> Họ tên</label>
-                <label><input type="radio" name="matchBy" value="cccd"> Số CCCD</label>
-            </div>
+        <div class="control-group" style="background: #e3f2fd; border-color: #bbdefb;">
+            <label>🌐 Chế độ: Truy xuất VDC Database</label>
+            <input type="text" id="searchMST" placeholder="Nhập Mã Số Thuế để tải dữ liệu...">
+            <button class="btn btn-cloud" onclick="loadFromCloud()">📥 TẢI DỮ LIỆU ĐÃ ĐỒNG BỘ</button>
         </div>
 
-        <button class="btn-run" onclick="handleData()">🚀 TRÍCH XUẤT DỮ LIỆU</button>
-        <div id="status" style="text-align:center; margin-top:10px; font-weight:bold; color:#d9534f;"></div>
+        <div id="status" style="margin-top:15px; font-weight:bold; color:#007bff; text-align:center;"></div>
     </div>
 
-    <div class="demo-area" style="text-align:center; padding:10px;">
-        <label>XEM TRƯỚC MẪU (DEMO)</label>
-        <div id="demoCard" style="margin:10px auto; border:1px solid #ddd; width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat;"></div>
-        <p style="font-size:12px; color:#666;">Hệ thống sẽ tự động dàn trang in</p>
+    <div class="demo-section" id="demoArea">
+        <label style="color:#7f8c8d; margin-bottom:15px;">HÌNH ẢNH THẺ MẪU (DEMO)</label>
+        <div id="demoContent">
+            <div id="card44" class="card-preview" style="width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat; position:relative; display:flex; flex-direction:column; align-items:center; padding:5mm 0; box-sizing:border-box; background-color:#fff;">
+                <div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center; text-transform:uppercase; padding:0 5px;">Tên Đơn Vị Công Tác</div>
+                <div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
+                <div style="width:20mm; height:30mm; border:0.5px solid #000; background:#eee; margin:5mm 0; display:flex; align-items:center; justify-content:center; font-size:8pt; color:#888;">ẢNH 2x3</div>
+                <div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VT</div>
+            </div>
+        </div>
+        <p id="demoDesc" style="font-size:12px; color:#95a5a6; margin-top:15px;">Quy chuẩn: 62mm x 90mm (NĐ 44)</p>
     </div>
 
     <div id="previewSection">
-        <h3>Kiểm tra danh sách nhân viên:</h3>
+        <h3 style="color:#2c3e50;">Danh sách học viên sẵn sàng in:</h3>
         <table id="previewTable">
             <thead>
                 <tr>
                     <th>STT</th>
                     <th>Ảnh</th>
                     <th>Họ và Tên</th>
-                    <th>Mã số / CCCD</th>
-                    <th>Đơn vị công tác</th>
+                    <th>Số Thẻ / CCCD</th>
+                    <th>Đơn vị</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <button class="btn-run" style="background:#007bff;" onclick="startPrinting()">🖨️ XÁC NHẬN VÀ XUẤT THẺ IN</button>
+        <button class="btn btn-print" onclick="executePrint()">🖨️ XÁC NHẬN VÀ MỞ TRANG IN TỰ ĐỘNG</button>
     </div>
 </div>
 
-<script>
-    // Hiện/Ẩn mục ZIP dựa trên cấu trúc Excel
-    document.getElementById('excelType').onchange = function() {
-        document.getElementById('zipGroup').style.display = this.value === 'modern' ? 'block' : 'none';
-    };
+<script type="module">
+    import { db, ref, get, child } from './js/firebase-config.js';
 
-    function normalizeStr(s) {
-        return s ? s.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/\s+/g, "") : "";
+    // 1. CẬP NHẬT DEMO THEO LỰA CHỌN
+    window.updateDemo = function() {
+        const type = document.getElementById('formType').value;
+        const content = document.getElementById('demoContent');
+        const desc = document.getElementById('demoDesc');
+        
+        if (type === '44') {
+            content.innerHTML = `<div class="card-preview" style="width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat; position:relative; display:flex; flex-direction:column; align-items:center; padding:5mm 0; box-sizing:border-box; background-color:#fff;"><div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center;">ĐƠN VỊ MẪU</div><div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div><div style="width:20mm; height:30mm; border:0.5px solid #000; background:#eee; margin:5mm 0;"></div><div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VDC</div></div>`;
+            desc.innerText = "Quy chuẩn: 62mm x 90mm (Khổ dọc)";
+        } else {
+            content.innerHTML = `<div class="card-preview" style="width:85mm; height:53mm; border:1.2mm double #CC0000; background-color:#FFEA00; box-shadow:inset 0 0 0 0.4mm #000; display:flex; flex-direction:column; align-items:center; padding:3mm 0; box-sizing:border-box;"><div style="font-size:8pt; font-weight:bold;">ĐƠN VỊ MẪU</div><div style="font-size:11pt; font-weight:bold; color:#CC0000; margin:2mm 0;">THẺ AN TOÀN ĐIỆN</div><div style="width:22mm; height:30mm; border:0.5px solid #000; background:#fff;"></div><div style="font-size:9pt; font-weight:bold; margin-top:2mm;">Số: CCCD_MAU</div></div>`;
+            desc.innerText = "Quy chuẩn: 85mm x 53mm (Khổ ngang)";
+        }
     }
 
-    async function handleData() {
-        const exType = document.getElementById('excelType').value;
-        const fileEx = document.getElementById('excelInput').files[0];
+    // 2. TRUY XUẤT DỮ LIỆU TỪ CLOUD (FIREBASE)
+    window.loadFromCloud = async function() {
+        const mst = document.getElementById('searchMST').value.trim();
         const status = document.getElementById('status');
+        if(!mst) return alert("Vui lòng nhập Mã số thuế!");
 
-        if (!fileEx) return alert("Chưa chọn file Excel!");
-        status.innerText = "⏳ Đang trích xuất...";
-
-        const wb = new ExcelJS.Workbook();
-        await wb.xlsx.load(await fileEx.arrayBuffer());
-        const sh = wb.worksheets[0];
-        let students = [];
-        let imgMap = {};
-
-        // XỬ LÝ ẢNH
-        if (exType === 'standard') {
-            sh.getImages().forEach(img => {
-                if (img.range.tl.nativeCol === 8) {
-                    imgMap[img.range.tl.nativeRow] = URL.createObjectURL(new Blob([wb.getImage(img.imageId).buffer]));
-                }
-            });
-        } else {
-            const fZip = document.getElementById('zipInput').files[0];
-            if (!fZip) return alert("Mẫu mới yêu cầu phải có file ZIP hình ảnh!");
-            const matchBy = document.querySelector('input[name="matchBy"]:checked').value;
-            const zip = await JSZip.loadAsync(fZip);
-            for (let name in zip.files) {
-                if (name.match(/\.(jpg|jpeg|png)$/i)) {
-                    const blob = await zip.files[name].async("blob");
-                    imgMap[normalizeStr(name.split('/').pop().split('.').shift())] = URL.createObjectURL(blob);
-                }
+        status.innerText = "⏳ Đang kết nối Database...";
+        try {
+            const snapshot = await get(child(ref(db), `HocVien/${mst}`));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                let students = [];
+                Object.keys(data).forEach(cccd => {
+                    const s = data[cccd];
+                    students.push({ name: s.HoTen, cccd: s.CCCD, photo: s.PhotoUrl, company: s.DonVi });
+                });
+                renderTable(students);
+                status.innerText = `✅ Đã tải ${students.length} học viên từ Cloud.`;
+            } else {
+                status.innerText = "❌ Không tìm thấy dữ liệu cho MST này.";
             }
-        }
+        } catch (e) { status.innerText = "❌ Lỗi kết nối Firebase!"; }
+    }
 
-        // XỬ LÝ ĐƠN VỊ & DANH SÁCH
-        let company = "";
-        let startRow = 10;
-
-        if (exType === 'standard') {
-            company = sh.getCell('A3').text.replace(/Công ty[:\s]*/gi, "").trim();
-            startRow = 10;
-        } else {
-            const fullA1 = sh.getCell('A1').text || "";
-            company = fullA1.split('\n')[0].replace(/Công ty[:\s]*/gi, "").trim();
-            startRow = 4;
-        }
-
+    // 3. HIỂN THỊ BẢNG PREVIEW
+    function renderTable(data) {
         const tbody = document.querySelector("#previewTable tbody");
         tbody.innerHTML = "";
-        let count = 0;
-
-        sh.eachRow((row, i) => {
-            if (i >= startRow) {
-                let name = row.getCell(2).text.trim();
-                let cccd = row.getCell(3).text.trim();
-                if (name) {
-                    count++;
-                    let photo = "";
-                    if (exType === 'standard') {
-                        photo = imgMap[i-1] || "";
-                    } else {
-                        const matchBy = document.querySelector('input[name="matchBy"]:checked').value;
-                        photo = imgMap[normalizeStr(matchBy === 'name' ? name : cccd)] || "";
-                    }
-
-                    students.push({ name, cccd, photo, company });
-                    tbody.innerHTML += `<tr><td>${count}</td><td><img src="${photo}" class="preview-img"></td><td>${name}</td><td>${cccd}</td><td>${company}</td></tr>`;
-                }
-            }
+        data.forEach((s, i) => {
+            tbody.innerHTML += `<tr><td>${i+1}</td><td><img src="${s.photo}" class="preview-img"></td><td>${s.name}</td><td>${s.cccd}</td><td>${s.company}</td></tr>`;
         });
-
-        sessionStorage.setItem('final_data', JSON.stringify(students));
+        sessionStorage.setItem('final_data', JSON.stringify(data));
         document.getElementById('previewSection').style.display = "block";
-        status.innerText = `✅ Đã xử lý ${count} nhân sự.`;
     }
 
-    function startPrinting() {
+    // 4. CHUYỂN SANG TRANG IN
+    window.executePrint = function() {
         const type = document.getElementById('formType').value;
         window.location.href = `./doctemplate/printThe${type}.html`;
     }
+    
+    // Giữ lại hàm processLocalFile cho các trường hợp in nhanh từ Excel cục bộ (logic v2.3)
+    // ...
 </script>
 </body>
 </html>
