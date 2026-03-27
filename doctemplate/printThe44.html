@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Thẻ ATVSLĐ (NĐ44) - Biểu mẫu</title>
+    <title>In Thẻ ATVSLĐ (NĐ44) - v1.9.1</title>
     <script src="../js/exceljs.min.js"></script>
     <style>
         @page { size: A4; margin: 0; }
@@ -10,11 +10,10 @@
             .no-print { display: none; }
             body { background: none; margin: 0; padding: 0; }
             .page-break { page-break-after: always; display: block; }
-            /* LỆNH QUAN TRỌNG: Cưỡng ép in hình nền */
+            /* Cưỡng ép in hình nền và màu sắc */
             * { 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important; 
-                color-adjust: exact !important;
             }
         }
         
@@ -30,11 +29,10 @@
         .card { 
             width: 62mm; height: 90mm; border: 0.1mm solid #ccc; 
             position: relative; display: flex; flex-direction: column; align-items: center;
-            /* Cập nhật đường dẫn và cưỡng ép hiển thị */
-            background-image: url('../images/backgroundTheATVSLD.png') !important;
+            /* ĐÃ CẬP NHẬT: Hình nền nằm cùng thư mục với file html này */
+            background-image: url('./backgroundTheATVSLD.png') !important;
             background-size: 100% 100% !important; 
             background-repeat: no-repeat !important;
-            background-position: center !important;
             text-align: center; padding: 5mm 0; box-sizing: border-box;
         }
 
@@ -48,10 +46,19 @@
     </style>
 </head>
 <body>
-    <button class="btn-back no-print" onclick="window.location.href='../printdoc.html'">⬅ Quay lại điều khiển</button>
+    <button class="btn-back no-print" onclick="window.location.href='../printdoc.html'">⬅ Quay lại</button>
     <div id="printArea"></div>
 
     <script>
+        // Hàm lấy text thuần túy để tránh lỗi [Object Object]
+        function getSafeText(cell) {
+            if (!cell || cell.value === null) return "";
+            if (typeof cell.value === 'object') {
+                return cell.text || ""; 
+            }
+            return cell.value.toString();
+        }
+
         window.onload = async function() {
             const dataBase64 = sessionStorage.getItem('excel_data_buffer');
             if (!dataBase64) return alert("Không tìm thấy dữ liệu!");
@@ -65,26 +72,21 @@
                 await wb.xlsx.load(bytes.buffer);
                 const sh = wb.worksheets[0];
 
-                // Lấy đơn vị và làm sạch
-                let rawDV = sh.getCell('A3').value ? sh.getCell('A3').value.toString() : "";
-                if (typeof sh.getCell('A3').value === 'object') {
-                    rawDV = sh.getCell('A3').text; // Xử lý lỗi [Object Object]
-                }
-                let cleanDV = rawDV.replace(/Công ty[:\s]*/gi, "").trim();
+                // Lấy đơn vị ô A3 sạch lỗi Object
+                let cleanDV = getSafeText(sh.getCell('A3')).replace(/Công ty[:\s]*/gi, "").trim();
                 let shortName = cleanDV.split(/\s+/).filter(w=>w).map(w=>w[0]).join('').toUpperCase();
                 let currentYear = new Date().getFullYear();
 
                 const imgMap = {};
                 sh.getImages().forEach(img => {
                     if (img.range.tl.nativeCol === 8) {
-                        const blob = new Blob([wb.getImage(img.imageId).buffer]);
-                        imgMap[img.range.tl.nativeRow] = URL.createObjectURL(blob);
+                        imgMap[img.range.tl.nativeRow] = URL.createObjectURL(new Blob([wb.getImage(img.imageId).buffer]));
                     }
                 });
 
                 let students = []; let stt = 1;
                 sh.eachRow((row, i) => {
-                    let name = row.getCell(2).text.trim();
+                    let name = getSafeText(row.getCell(2));
                     if (i >= 10 && name) {
                         students.push({ 
                             img: imgMap[i-1] || "", 
@@ -109,10 +111,7 @@
                     });
                     area.appendChild(page);
                 }
-                
-                // Tự động mở hộp thoại in sau khi load xong
                 setTimeout(() => { window.print(); }, 500);
-                
             } catch (e) { alert("Lỗi: " + e.message); }
         };
     </script>
