@@ -75,30 +75,35 @@ async function initApp(user) {
     loadView('views/kanban.html');
 }
 
-// Phiên bản: 3.2 - Fix lỗi nạp module Thông tin học viên
+// Phiên bản: 3.4 - Điều phối Sidebar tự động
 
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
+    const sidebar = document.getElementById('layout-sidebar');
     const timestamp = new Date().getTime();
 
-    // Hiển thị loading nhẹ trong khi nạp
+    // 1. TỰ ĐỘNG THU GỌN SIDEBAR KHI XỬ LÝ DỮ LIỆU
+    if (viewFile === 'views/loadExcel.html' || viewFile === 'printdoc.html') {
+        sidebar.classList.remove('expanded'); // Thu nhỏ sidebar
+    } else {
+        sidebar.classList.add('expanded'); // Mở rộng cho Kanban/Admin
+    }
+
     contentDiv.innerHTML = `<div class="flex items-center justify-center h-full text-blue-500"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>`;
 
-    // CHẾ ĐỘ NHÚNG IFRAME (Dành cho các module xử lý dữ liệu phức tạp)
-    // Giúp tránh lỗi "quay quay" do xung đột mã module
+    // 2. NHÚNG IFRAME CHO MODULE NẶNG
     if (viewFile === 'printdoc.html' || viewFile === 'views/loadExcel.html') {
         contentDiv.innerHTML = `
             <iframe src="${viewFile}?v=${timestamp}" 
                     class="w-full h-full border-none shadow-inner" 
-                    style="min-height: 88vh; background: white; border-radius: 8px;">
+                    style="min-height: 90vh; background: white; border-radius: 8px;">
             </iframe>`;
         return;
     }
 
-    // CHẾ ĐỘ NẠP COMPONENT (Dành cho Kanban, Admin, Profile...)
+    // 3. NẠP COMPONENT CHO MODULE HỆ THỐNG
     await loadComponent("layout-content", viewFile);
     
-    // Kích hoạt logic sau khi nạp
     if (viewFile === 'views/kanban.html') setupKanbanEvents();
     if (viewFile === 'views/admin-users.html') loadAdminUsers();
     if (viewFile === 'views/admin-trainers.html') setupTrainerEvents();
