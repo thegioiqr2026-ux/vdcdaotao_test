@@ -75,33 +75,36 @@ async function initApp(user) {
     loadView('views/kanban.html');
 }
 
-// Phiên bản: 3.1 - Cập nhật Module Thông tin học viên & In thẻ
+// Phiên bản: 3.2 - Fix lỗi nạp module Thông tin học viên
 
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
-    
-    // Hiển thị trạng thái chờ tải dữ liệu
-    contentDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-blue-500">
-        <i class="fa-solid fa-spinner fa-spin text-3xl mb-2"></i>
-        <span class="text-xs font-medium text-gray-500">Đang nạp module...</span>
-    </div>`;
-    
-    // Xử lý nạp Module In thẻ qua Iframe để tránh xung đột CSS Tailwind
-    if (viewFile === 'printdoc.html') {
-        contentDiv.innerHTML = `<iframe src="printdoc.html?v=${new Date().getTime()}" class="w-full h-full border-none" style="min-height: 85vh;"></iframe>`;
+    const timestamp = new Date().getTime();
+
+    // Hiển thị loading nhẹ trong khi nạp
+    contentDiv.innerHTML = `<div class="flex items-center justify-center h-full text-blue-500"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>`;
+
+    // CHẾ ĐỘ NHÚNG IFRAME (Dành cho các module xử lý dữ liệu phức tạp)
+    // Giúp tránh lỗi "quay quay" do xung đột mã module
+    if (viewFile === 'printdoc.html' || viewFile === 'views/loadExcel.html') {
+        contentDiv.innerHTML = `
+            <iframe src="${viewFile}?v=${timestamp}" 
+                    class="w-full h-full border-none shadow-inner" 
+                    style="min-height: 88vh; background: white; border-radius: 8px;">
+            </iframe>`;
         return;
     }
 
-    // Nạp các view thành phần (Hồ sơ, Kanban, Admin...)
+    // CHẾ ĐỘ NẠP COMPONENT (Dành cho Kanban, Admin, Profile...)
     await loadComponent("layout-content", viewFile);
     
-    // Kích hoạt các hàm logic sau khi nạp giao diện
+    // Kích hoạt logic sau khi nạp
     if (viewFile === 'views/kanban.html') setupKanbanEvents();
     if (viewFile === 'views/admin-users.html') loadAdminUsers();
     if (viewFile === 'views/admin-trainers.html') setupTrainerEvents();
     if (viewFile === 'views/profile.html') setupProfileEvents();
-    // Module 'views/loadExcel.html' sẽ tự khởi tạo logic qua thẻ script module bên trong nó
 };
+
 // ==========================================
 // HỒ SƠ & ĐỔI MẬT KHẨU
 // ==========================================
