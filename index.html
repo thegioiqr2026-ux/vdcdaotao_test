@@ -1,65 +1,41 @@
-<!-- Phiên bản: 1.7 -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VDC CRM - Bảng Điều Khiển (TEST)</title>
+    <title>Hệ thống VDC CRM v5.0</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
-    <link rel="icon" href="data:,">
+
     <style>
-        /* Tùy chỉnh thanh cuộn cho giao diện nhìn giống App chuyên nghiệp */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        /* Trạng thái mặc định của Sidebar khi thu gọn */
-        #layout-sidebar { 
-            width: 64px; 
-            overflow: hidden; 
-            white-space: nowrap; 
-        }
-        /* Khi di chuột vào hoặc khi được yêu cầu mở rộng */
-        #layout-sidebar:hover, #layout-sidebar.expanded { 
-            width: 260px; 
-        }
-        /* Điều chỉnh vùng nội dung chính linh hoạt */
-        .main-container {
-            margin-left: 64px;
-            transition: margin-left 0.3s;
-        }
-        #layout-sidebar:hover + .main-container, #layout-sidebar.expanded + .main-container {
-            margin-left: 260px;
-        }
+        /* CSS điều khiển Sidebar thu gọn */
+        #layout-sidebar { width: 64px; transition: width 0.3s; overflow: hidden; }
+        #layout-sidebar.expanded, #layout-sidebar:hover { width: 260px; }
+        .menu-text { display: none; white-space: nowrap; margin-left: 12px; }
+        #layout-sidebar.expanded .menu-text, #layout-sidebar:hover .menu-text { display: inline; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans h-screen flex overflow-hidden hidden" id="appBody">
-    
-    <!-- 1. Khung chứa thanh Menu bên trái (Sidebar) -->
-    <div id="layout-sidebar" class="h-full z-20 transition-all duration-300"></div>
+<body class="bg-gray-100 flex h-screen overflow-hidden">
 
-    <!-- Khu vực nội dung chính bên phải -->
-    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        
-        <!-- 2. Khung chứa thanh Header phía trên -->
-        <div id="layout-header" class="z-10 shadow-sm"></div>
-        
-        <!-- 3. Khu vực trung tâm: Nơi nhúng các màn hình (Kanban, Danh sách...) -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 relative" id="layout-content">
-            <!-- Màn hình chờ tải dữ liệu mặc định -->
-            <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-3"></i> 
-                <span class="font-medium">Đang kết nối hệ thống...</span>
+    <aside id="layout-sidebar" class="bg-slate-900 text-white h-full flex-shrink-0 flex flex-col transition-all duration-300">
+        <div class="p-4 flex items-center border-b border-slate-800 h-16">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold flex-shrink-0">V</div>
+            <span class="menu-text font-bold text-lg text-white">VDC CRM</span>
+        </div>
+        <div id="sidebar-menu-container" class="flex-1 overflow-y-auto overflow-x-hidden">
             </div>
-        </main>
-        
-        <!-- 4. Khung chứa thanh Footer phía dưới -->
-        <div id="layout-footer"></div>
-    </div>
+    </aside>
 
-    <!-- Nhúng file logic điều phối (Keo dán) -->
-    <script type="module" src="js/main.js"></script>
+    <main class="flex-1 flex flex-col min-w-0 bg-white">
+        <div id="layout-content" class="h-full w-full overflow-hidden">
+            <div class="flex items-center justify-center h-full text-blue-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
 </body>
 </html>
