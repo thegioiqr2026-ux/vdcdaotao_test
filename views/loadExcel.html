@@ -79,16 +79,60 @@
 
     let globalDataHocVien = [];
 
-    // HÀM LẤY GIÁ TRỊ THÔNG MINH (Xử lý ô gộp và công thức)
-    const getVal = (sheet, addr) => {
-        const cell = sheet.getCell(addr);
-        // Nếu ô bị gộp (Master Cell sẽ chứa giá trị)
-        const target = cell.isMerged && cell.master ? cell.master : cell;
-        const val = target.value;
-        if (val === null || val === undefined) return "";
-        if (typeof val === 'object' && val.result !== undefined) return val.result.toString().trim();
-        return val.toString().trim();
-    };
+// CẬP NHẬT HÀM getVal TRONG loadExcel.html v6.1
+const getVal = (sheet, addr) => {
+    const cell = sheet.getCell(addr);
+    const target = cell.isMerged && cell.master ? cell.master : cell;
+    let val = target.value;
+
+    if (!val) return "";
+
+    // SỬA LỖI [object Object]: Xử lý Rich Text
+    if (typeof val === 'object') {
+        if (val.richText) {
+            return val.richText.map(t => t.text).join('').trim();
+        }
+        if (val.result !== undefined) return val.result.toString().trim();
+        return ""; // Tránh trả về [object Object]
+    }
+    return val.toString().trim();
+};
+
+// CẬP NHẬT LOGIC TRÍCH XUẤT TRONG handlePreview()
+if (type === 'zip_img') {
+    // Mẫu Long Phương (Giữ nguyên tọa độ cũ)
+    const infoText = getVal(sheet, 'A8');
+    document.getElementById('inputTenCty').value = infoText.split('\n')[0];
+    // ... logic cũ ...
+} else {
+    // MẪU TTHV - FIX LỆCH CỘT THEO ẢNH image_1fb089.png
+    document.getElementById('inputTenCty').value = getVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
+    document.getElementById('inputMST').value = getVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
+    
+    const anhExcel = {};
+    sheet.getImages().forEach(img => { 
+        if (img.range.tl.nativeCol >= 7) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer; 
+    });
+
+    sheet.eachRow((row, i) => {
+        const sttVal = row.getCell(1).text.trim();
+        if (i >= 10 && sttVal && !isNaN(sttVal)) {
+            data.push({
+                stt: data.length + 1,
+                hoten: getVal(sheet, `B${i}`),      // Cột B: Họ tên
+                gioitinh: getVal(sheet, `C${i}`),   // Cột C: Giới tính
+                ngaysinh: row.getCell(4).text,      // Cột D: Ngày sinh
+                quoctich: getVal(sheet, `E${i}`),   // Cột E: Quốc tịch
+                congviec: getVal(sheet, `F${i}`),   // Cột F: Chức vụ
+                cccd: getVal(sheet, `G${i}`),       // Cột G: CCCD
+                manv: getVal(sheet, `G${i}`),       // Dùng CCCD làm Mã NV nếu thiếu
+                donvi: getVal(sheet, 'A2') || "VDC",
+                noidung: getVal(sheet, `H${i}`),    // Cột H: Nội dung HL
+                photo: anhExcel[i - 1] || null      // Ảnh cột I (nativeCol 8)
+            });
+        }
+    });
+}
 
     const superClean = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "");
 
