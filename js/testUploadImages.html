@@ -2,46 +2,57 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Lab - Test Upload v6.5</title>
+    <title>VDC Lab - Test Preview v6.6</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.4s ease-out; }
+    </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
     <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
         <div class="text-center mb-6">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full mb-4 shadow-inner">
-                <i class="fa-solid fa-flask-vial text-2xl"></i>
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4 shadow-inner">
+                <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
             </div>
-            <h2 class="text-2xl font-bold text-slate-800 tracking-tight">VDC Test Cloud</h2>
-            <p class="text-slate-500 text-sm mt-1">WebApp Link: ...2cuma3/exec (v6.5)</p>
+            <h2 class="text-2xl font-bold text-slate-800 tracking-tight">VDC Cloud Test</h2>
+            <p class="text-slate-500 text-sm mt-1">Dự án: vdcdaotao-test (v6.6)</p>
         </div>
 
         <div class="space-y-4">
-            <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer relative group">
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer relative group">
                 <input type="file" id="testFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
-                <div id="uploadContent">
-                    <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-4xl mb-2 group-hover:text-blue-500 transition-colors"></i>
-                    <span id="fileNameDisplay" class="block text-sm font-medium text-slate-600">Chọn ảnh để test Upload</span>
-                    <span class="text-xs text-slate-400 mt-1 block">(Hỗ trợ JPG, PNG)</span>
+                
+                <div id="uploadContent" class="group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-image text-slate-400 text-4xl mb-2 group-hover:text-blue-500 transition-colors"></i>
+                    <span id="fileNameDisplay" class="block text-sm font-medium text-slate-600">Bấm để chọn 1 tấm ảnh test</span>
+                    <span class="text-xs text-slate-400 mt-1 block">(JPG, PNG)</span>
+                </div>
+
+                <div id="local-preview-box" class="hidden mt-3 p-3 bg-white rounded-lg border border-slate-200 shadow-sm animate-fade-in relative">
+                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2">Ảnh bạn vừa chọn:</p>
+                    <img id="local-img" src="" class="w-full h-44 object-cover rounded-md border-2 border-white shadow-inner">
+                    <span id="local-size" class="absolute top-1 right-1 text-[9px] bg-slate-900/50 text-white px-2 py-0.5 rounded"></span>
                 </div>
             </div>
 
             <button id="btnStart" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 active:scale-95">
-                <i class="fa-solid fa-bolt"></i> BẮT ĐẦU KIỂM TRA
+                <i class="fa-solid fa-rocket"></i> BẮT ĐẦU KIỂM TRA
             </button>
 
             <div id="statusBox" class="hidden p-4 rounded-xl text-sm font-semibold border text-center animate-pulse"></div>
             
             <div id="resultBox" class="hidden space-y-3 animate-fade-in">
-                <div class="bg-slate-900 text-white p-4 rounded-xl overflow-hidden relative shadow-lg">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Drive & Firebase Sync Success</p>
+                <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg border border-slate-700">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Kết quả từ Drive & Firebase</p>
                     <a id="linkDrive" href="#" target="_blank" class="text-blue-400 underline break-all text-xs block mb-3 hover:text-blue-300"></a>
                     <div class="relative group">
-                        <img id="imgPreview" src="" class="w-full h-52 object-cover rounded-lg border border-slate-700">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                            <span class="text-white text-xs">Bấm để xem ảnh gốc</span>
+                        <img id="imgPreview" src="" class="w-full h-48 object-cover rounded-lg border border-slate-700">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg cursor-pointer">
+                            <span class="text-white text-xs">Bấm để xem ảnh gốc trên Drive</span>
                         </div>
                     </div>
                 </div>
@@ -54,34 +65,47 @@
     </div>
 
     <script type="module">
-        // Import cấu hình chuẩn v1.24
+        // Import cấu hình chuẩn
         import { db, ref, set } from '../js/firebase-config.js';
 
-        // CẬP NHẬT LINK WEB APP MỚI NHẤT CỦA BẠN
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxYQW1o_VKQAhaJPJsUzXxR0AJD7Y7gR5tlMrcFKDGcgOGldUee66HtiwO37r2cuma3/exec";
+        // LINK WEB APP CỦA BẠN (Cập nhật ngày 28/03/2026)
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
 
         const fileInput = document.getElementById('testFile');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const uploadContent = document.getElementById('uploadContent');
+        const localPreviewBox = document.getElementById('local-preview-box');
+        const localImg = document.getElementById('local-img');
+        const localSize = document.getElementById('local-size');
         const statusBox = document.getElementById('statusBox');
         const resultBox = document.getElementById('resultBox');
 
-        // Hiển thị tên file ngay khi chọn
+        // BẮT SỰ KIỆN CHỌN FILE ĐỂ XEM TRƯỚC
         fileInput.onchange = () => {
-            if(fileInput.files[0]) {
-                fileNameDisplay.innerText = fileInput.files[0].name;
+            const file = fileInput.files[0];
+            if(file) {
+                // 1. Hiển thị tên và kích thước
+                fileNameDisplay.innerText = file.name;
                 fileNameDisplay.classList.add('text-blue-600');
+                localSize.innerText = `${(file.size / 1024).toFixed(1)} KB`;
+
+                // 2. Nạp ảnh cục bộ bằng URL.createObjectURL (Rất nhanh)
+                uploadContent.classList.add('hidden');
+                localPreviewBox.classList.remove('hidden');
+                localImg.src = URL.createObjectURL(file);
             }
         };
 
+        // Bắt sự kiện tải lên
         async function runTest() {
-            if (!fileInput.files[0]) return alert("Vui lòng chọn 1 tấm ảnh!");
+            const file = fileInput.files[0];
+            if (!file) return alert("Vui lòng chọn 1 tấm ảnh!");
 
             // Trạng thái khởi động
             statusBox.className = "p-4 rounded-xl text-sm font-semibold border bg-blue-50 border-blue-200 text-blue-700 block text-center";
-            statusBox.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Đang đóng gói dữ liệu...`;
+            statusBox.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Đang tải lên Drive...`;
             resultBox.classList.add('hidden');
 
-            const file = fileInput.files[0];
             const reader = new FileReader();
 
             reader.onload = async function(e) {
@@ -89,19 +113,10 @@
                 
                 try {
                     // Bước 1: Gửi lên Google Drive
-                    statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-2"></i> Đang tải lên Drive (CORS Checked)...`;
                     const res = await fetch(GAS_URL, {
                         method: 'POST',
-                        body: JSON.stringify({
-                            type: "upload",
-                            mst: "TEST_MST_NEW",
-                            tenCty: "VDC CLOUD TEST",
-                            cccd: "TEST_999",
-                            base64: base64
-                        })
+                        body: JSON.stringify({ type: "upload", mst: "LAB_MST", tenCty: "VDC LAB", cccd: "TEST_999", base64: base64 })
                     });
-
-                    if (!res.ok) throw new Error("CORS hoặc Server lỗi. Kiểm tra Deploy GAS!");
                     
                     const resJson = await res.json();
                     
@@ -113,14 +128,14 @@
                         
                         await set(ref(db, 'TestUpload/LastImage'), {
                             url: driveLink,
-                            updateTime: new Date().toLocaleString('vi-VN'),
-                            status: "Connected"
+                            time: new Date().toLocaleString('vi-VN'),
+                            status: "PREVIEW FIXED"
                         });
 
                         // Bước 3: Hiển thị kết quả thành công
                         statusBox.classList.remove('animate-pulse');
                         statusBox.className = "p-4 rounded-xl text-sm font-semibold border bg-emerald-100 border-emerald-200 text-emerald-700 block text-center";
-                        statusBox.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> THÔNG SUỐT 100%!`;
+                        statusBox.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> KẾT NỐI THÔNG SUỐT!`;
                         
                         resultBox.classList.remove('hidden');
                         document.getElementById('linkDrive').href = driveLink;
@@ -131,10 +146,8 @@
                         throw new Error(resJson.message);
                     }
                 } catch (error) {
-                    statusBox.classList.remove('animate-pulse');
                     statusBox.className = "p-4 rounded-xl text-sm font-semibold border bg-red-100 border-red-200 text-red-700 block text-center";
                     statusBox.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-2"></i> Lỗi: ${error.message}`;
-                    console.error("Lỗi hệ thống VDC:", error);
                 }
             };
             reader.readAsDataURL(file);
