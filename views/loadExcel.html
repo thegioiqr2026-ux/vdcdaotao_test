@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC CRM - Final Fix v8.2</title>
+    <title>VDC CRM - Anti-Null v8.3</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,12 +10,12 @@
     <style>
         body { background: #f1f5f9; color: #000; font-weight: 700; font-size: 14px; }
         .sidebar-vdc { width: 360px; height: 100vh; background: #fff; border-right: 3px solid #1e293b; flex-shrink: 0; }
-        label { color: #1e293b !important; font-weight: 900 !important; font-size: 12px !important; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        label { color: #1e293b !important; font-weight: 900 !important; font-size: 11px !important; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input[type="text"], select { border: 2px solid #1e293b !important; color: #000 !important; font-weight: 800 !important; padding: 10px !important; border-radius: 10px !important; width: 100%; margin-bottom: 12px; }
         .main-vdc { flex: 1; padding: 30px; display: flex; flex-direction: column; overflow: hidden; }
         .table-wrapper { background: #fff; border: 2px solid #1e293b; border-radius: 20px; overflow: hidden; flex: 1; display: flex; flex-direction: column; }
         .scroll-area { flex: 1; overflow: auto; padding: 0 20px 20px 20px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0 5px; min-width: 1200px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0 5px; min-width: 1300px; }
         th { position: sticky; top: 0; background: #1e293b; color: #fff; padding: 15px; font-size: 12px; font-weight: 900; text-transform: uppercase; z-index: 20; text-align: left; }
         .row-hv td { padding: 12px 15px; background: #fff; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; color: #000; }
         .row-hv td:first-child { border-radius: 12px 0 0 12px; text-align: center; border-left: 1px solid #cbd5e1; }
@@ -31,12 +31,12 @@
     <aside class="sidebar-vdc p-6 flex flex-col shadow-2xl">
         <div class="mb-10 border-b-4 border-blue-600 pb-4">
             <h1 class="text-3xl font-black text-slate-900 tracking-tighter italic">VDC<span class="text-blue-600">.CRM</span></h1>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Special Fix v8.2</p>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">v8.3 - Final Fix Null</p>
         </div>
 
         <div class="space-y-4 flex-1 overflow-y-auto pr-2">
             <div>
-                <label>LOẠI MẪU DỮ LIỆU:</label>
+                <label>MẪU DỮ LIỆU:</label>
                 <select id="templateType">
                     <option value="excel_img" selected>1. Mẫu TTHV (Ảnh trong Excel)</option>
                     <option value="zip_img">2. Mẫu Long Phương (Ảnh ZIP)</option>
@@ -44,9 +44,8 @@
             </div>
 
             <div class="bg-slate-50 p-4 rounded-xl border-2 border-slate-200">
-                <label>CHỌN FILE EXCEL:</label>
+                <label>CHỌN FILE EXCEL (.xlsx):</label>
                 <input type="file" id="fileExcel" accept=".xlsx" class="text-xs">
-                
                 <div id="zipGroup" class="hidden mt-4 border-t pt-4 border-slate-200">
                     <label>CHỌN FILE ZIP ẢNH:</label>
                     <input type="file" id="fileZip" accept=".zip" class="text-xs">
@@ -55,50 +54,22 @@
 
             <div class="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
                 <label>MÃ SỐ THUẾ:</label>
-                <input type="text" id="inputMST" placeholder="Chờ quét file...">
+                <input type="text" id="inputMST" placeholder="Chờ quét...">
                 <label>TÊN CÔNG TY:</label>
-                <input type="text" id="inputTenCty" placeholder="Chờ quét file...">
+                <input type="text" id="inputTenCty" placeholder="Chờ quét...">
             </div>
 
-            <button id="btnPreview" class="btn-vdc btn-preview hover:bg-black">🔍 TRÍCH XUẤT DỮ LIỆU</button>
-            
-            <div id="syncSection" class="hidden">
-                <button id="btnSync" class="btn-vdc btn-sync hover:bg-emerald-700">🚀 ĐỒNG BỘ VDC CLOUD</button>
-                <div id="status" class="mt-4 text-center font-black text-blue-700 text-xs uppercase animate-pulse"></div>
-            </div>
+            <button id="btnPreview" class="btn-vdc btn-preview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
+            <div id="syncSection" class="hidden"><button id="btnSync" class="btn-vdc btn-sync">🚀 ĐỒNG BỘ VDC CLOUD</button></div>
         </div>
     </aside>
 
     <main class="main-vdc">
         <div class="flex justify-between items-end mb-6 px-4">
-            <div>
-                <h2 class="text-2xl font-black text-slate-900 uppercase">Học viên trích xuất</h2>
-                <p class="text-xs text-slate-500 font-bold italic">Đã sửa lỗi Null/ToString và tối ưu hiển thị v8.2</p>
-            </div>
-            <div class="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xl shadow-lg">
-                <span id="count">00</span> <span class="text-[10px] uppercase">Học viên</span>
-            </div>
+            <div><h2 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Học viên trích xuất</h2><p class="text-[11px] text-slate-500 font-bold italic tracking-wide">Fix lỗi (reading 'toString') tuyệt đối</p></div>
+            <div class="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xl shadow-lg"><span id="count">00</span></div>
         </div>
-
-        <div class="table-wrapper">
-            <div class="scroll-area">
-                <table id="vdcTable">
-                    <thead>
-                        <tr>
-                            <th class="w-16">STT</th>
-                            <th class="w-24">Ảnh</th>
-                            <th>Họ và Tên</th>
-                            <th>Ngày sinh</th>
-                            <th>CCCD</th>
-                            <th>Chức vụ</th>
-                            <th>Đơn vị/Nhóm</th>
-                            <th class="text-right">Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
+        <div class="table-wrapper"><div class="scroll-area"><table id="vdcTable"><thead><tr><th class="w-16 text-center">STT</th><th class="w-24">Ảnh</th><th>Họ và Tên</th><th>Ngày sinh</th><th>CCCD</th><th>Chức vụ</th><th>Đơn vị</th><th class="text-right">Trạng thái</th></tr></thead><tbody></tbody></table></div></div>
     </main>
 
 <script type="module">
@@ -107,30 +78,26 @@
 
     let globalHocVien = [];
 
-    // HÀM LẤY GIÁ TRỊ AN TOÀN - FIX TRIỆT ĐỂ LỖI TOSTRING [v8.2]
+    // HÀM LẤY GIÁ TRỊ TUYỆT ĐỐI AN TOÀN (KHÔNG DÙNG .TEXT)
     const getSafeVal = (sheet, addr) => {
         try {
             const cell = sheet.getCell(addr);
-            if (!cell) return "";
+            if (!cell || cell.value === null || cell.value === undefined) return "";
             
-            // Xử lý ô gộp
             const target = (cell.isMerged && cell.master) ? cell.master : cell;
             let val = target.value;
             
-            // KIỂM TRA NULL/UNDEFINED NGAY LẬP TỨC
             if (val === null || val === undefined) return "";
             
-            // Xử lý đối tượng (RichText, Formula)
+            // Xử lý đối tượng (RichText, Formula, Date)
             if (typeof val === 'object') {
                 if (val.richText) return val.richText.map(t => t.text).join('').trim();
+                if (val instanceof Date) return val.toLocaleDateString('vi-VN');
                 if (val.result !== undefined && val.result !== null) return val.result.toString().trim();
                 return "";
             }
-            
             return val.toString().trim();
-        } catch(e) { 
-            return ""; 
-        }
+        } catch(e) { return ""; }
     };
 
     const superClean = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "") : "";
@@ -143,25 +110,22 @@
         const type = document.getElementById('templateType').value;
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
-        if (!fileEx) return alert("Vui lòng chọn file Excel!");
+        if (!fileEx) return alert("Chọn file Excel!");
         
         try {
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG PHÂN TÍCH...";
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT...";
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await fileEx.arrayBuffer());
             const sheet = workbook.worksheets[0];
 
-            // 1. Trích xuất MST & Tên Cty
-            const rawTen = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "").trim();
-            document.getElementById('inputTenCty').value = rawTen || "Chưa xác định";
-            const rawMST = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "").trim();
-            document.getElementById('inputMST').value = rawMST || "0000000000";
+            // 1. Lấy thông tin đầu trang
+            document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
+            document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
 
-            // 2. Bóc ảnh Excel
+            // 2. Bóc ảnh
             const anhExcel = {};
             sheet.getImages().forEach(img => {
-                const row = img.range.tl.nativeRow;
-                if (img.range.tl.nativeCol >= 7) anhExcel[row] = workbook.getImage(img.imageId).buffer;
+                if (img.range.tl.nativeCol >= 7) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer;
             });
 
             // 3. Bóc ZIP
@@ -174,20 +138,20 @@
                 }
             }
 
-            // 4. Duyệt danh sách (v8.2 - Kiểm tra tồn tại dữ liệu)
+            // 4. DUYỆT HÀNG (SỬA LỖI TẠI ĐÂY)
             globalHocVien = [];
             sheet.eachRow((row, i) => {
-                const sttRaw = row.getCell(1).text;
-                const sttVal = sttRaw ? sttRaw.trim() : "";
+                // Thay vì row.getCell(1).text, ta dùng hàm getSafeVal an toàn hơn
+                const sttVal = getSafeVal(sheet, `A${i}`);
                 
                 if (i >= 10 && sttVal && !isNaN(sttVal)) {
                     const hoten = (type === 'excel_img') ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
-                    if (!hoten) return; // Bỏ qua nếu không có tên
+                    if (!hoten) return;
 
                     globalHocVien.push({
                         stt: globalHocVien.length + 1,
                         hoten: hoten,
-                        ngaysinh: (type === 'excel_img') ? row.getCell(4).text : row.getCell(6).text,
+                        ngaysinh: (type === 'excel_img') ? getSafeVal(sheet, `D${i}`) : getSafeVal(sheet, `F${i}`),
                         cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
                         congviec: (type === 'excel_img') ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
                         donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
@@ -196,42 +160,38 @@
                 }
             });
 
-            // Render bảng cực nét
+            // Hiển thị
             const tbody = document.querySelector("#vdcTable tbody");
             tbody.innerHTML = globalHocVien.map(h => `
                 <tr class="row-hv">
                     <td class="font-black text-slate-400">${h.stt}</td>
-                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="img-hv">` : '<span class="text-red-600 font-black">❌</span>'}</td>
+                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="img-hv">` : '❌'}</td>
                     <td class="font-black text-slate-900 uppercase">${h.hoten}</td>
                     <td class="font-bold">${h.ngaysinh}</td>
                     <td class="text-blue-800 font-black">${h.cccd}</td>
-                    <td class="text-slate-600 italic font-bold text-[11px]">${h.congviec}</td>
-                    <td class="text-slate-400 font-black uppercase text-[10px]">${h.donvi}</td>
-                    <td id="stt-${h.cccd}" class="font-black italic text-slate-300 text-[10px] uppercase">Chờ Sync</td>
+                    <td class="text-[11px] font-bold text-slate-500 italic">${h.congviec}</td>
+                    <td class="text-[10px] font-black uppercase text-slate-400">${h.donvi}</td>
+                    <td id="stt-${h.cccd}" class="font-black italic text-slate-300">CHỜ ĐỒNG BỘ</td>
                 </tr>
             `).join('');
 
             document.getElementById('syncSection').classList.remove('hidden');
             document.getElementById('btnSync').style.display = 'block';
-            document.getElementById('count').innerText = globalHocVien.length;
-            document.getElementById('btnPreview').innerText = "🔍 PHÂN TÍCH LẠI";
+            document.getElementById('count').innerText = globalHocVien.length + " HỌC VIÊN";
+            document.getElementById('btnPreview').innerText = "🔍 QUÉT LẠI";
 
         } catch (e) {
-            console.error(e);
+            console.error("Lỗi:", e);
             alert("Lỗi trích xuất: " + e.message);
-            document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT DỮ LIỆU";
         }
     };
 
-    // Logic Sync giữ nguyên tốc độ cao
     document.getElementById('btnSync').onclick = async () => {
         const mst = document.getElementById('inputMST').value;
         const ten = document.getElementById('inputTenCty').value;
         document.getElementById('btnSync').disabled = true;
-
         for (let i = 0; i < globalHocVien.length; i++) {
             const h = globalHocVien[i];
-            document.getElementById('status').innerText = `SYNC: ${h.hoten}`;
             let url = "";
             if (h.photo) {
                 const b64 = btoa(new Uint8Array(h.photo).reduce((d,b)=>d+String.fromCharCode(b),''));
@@ -240,14 +200,13 @@
                     const json = await res.json();
                     if(json.status === "success") {
                         url = json.fileUrl;
-                        document.getElementById(`stt-${h.cccd}`).innerHTML = `<span class="text-emerald-600 font-black">✅ DRIVE OK</span>`;
+                        document.getElementById(`stt-${h.cccd}`).innerHTML = `<span class="text-emerald-600 font-black uppercase">✅ DRIVE OK</span>`;
                     }
                 } catch(e) {}
             }
             const { photo, ...clean } = h;
-            await set(ref(db, `HocVien/${mst}/${h.cccd}`), { ...clean, PhotoUrl: url, NgayUpdate: new Date().toLocaleString() });
+            await set(ref(db, `HocVien/${mst}/${h.cccd}`), { ...clean, PhotoUrl: url, Update: new Date().toLocaleString() });
         }
-        document.getElementById('status').innerText = "✅ HOÀN TẤT!";
     };
 </script>
 </body>
