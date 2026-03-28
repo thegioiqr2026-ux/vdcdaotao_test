@@ -2,162 +2,182 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC CRM - Trung Tâm In Ấn v2.5</title>
+    <title>VDC In Thẻ - Final Fix v8.6</title>
     <script src="./js/exceljs.min.js"></script>
     <script src="./js/firebase-config.js" type="module"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
-        .main-panel { background: white; max-width: 1100px; margin: 0 auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 400px; gap: 25px; }
-        
-        /* Cột trái: Điều khiển */
-        .controls { border-right: 1px solid #eee; padding-right: 20px; }
-        .control-group { margin-bottom: 15px; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; }
-        label { font-weight: bold; display: block; margin-bottom: 8px; color: #34495e; font-size: 14px; }
-        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 15px; }
-        .btn-excel { background: #28a745; color: white; }
+        body { background: #f1f5f9; color: #000; font-weight: 700; }
+        .main-panel { background: white; max-width: 1200px; margin: 20px auto; padding: 25px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 400px; gap: 25px; border: 2px solid #e2e8f0; }
+        .control-group { margin-bottom: 20px; padding: 20px; border-radius: 15px; border: 2px solid #cbd5e1; background: #fff; }
+        label { font-weight: 900; display: block; margin-bottom: 8px; color: #1e293b; font-size: 11px; text-transform: uppercase; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #94a3b8; border-radius: 10px; font-weight: 800; font-size: 14px; outline: none; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 13px; text-transform: uppercase; }
         .btn-cloud { background: #0288d1; color: white; }
-        .btn-print { background: #3498db; color: white; height: 50px; font-size: 18px; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* Cột phải: Demo Card */
-        .demo-section { text-align: center; background: #fafafa; padding: 20px; border-radius: 10px; border: 1px dashed #cbd5e0; }
-        .card-preview { margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: 0.3s; }
+        .btn-print { background: #2563eb; color: white; font-size: 16px; margin-top: 20px; padding: 20px; }
         
-        /* Preview Table */
-        #previewSection { grid-column: 1 / span 2; margin-top: 20px; border-top: 2px solid #3498db; padding-top: 20px; display: none; }
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; font-size: 13px; }
-        th { background: #34495e; color: white; }
-        .preview-img { width: 45px; height: 60px; object-fit: cover; border: 1px solid #eee; }
+        /* Progress Bar */
+        .progress-container { width: 100%; background: #e2e8f0; height: 12px; border-radius: 10px; margin-top: 15px; overflow: hidden; display: none; border: 1px solid #cbd5e1; }
+        .progress-fill { height: 100%; width: 0%; background: #059669; transition: width 0.3s; }
+        
+        table { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
+        th { background: #1e293b; color: white; padding: 15px; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; }
+        td { padding: 12px; background: #fff; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; text-align: center; color: #000; font-size: 14px; }
+        .preview-img { width: 45px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid #1e293b; margin: 0 auto; }
     </style>
 </head>
 <body>
 
 <div class="main-panel">
     <div class="controls">
-        <h2 style="color:#2c3e50; margin-bottom:20px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">TRUNG TÂM IN THẺ</h2>
-        
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg"><i class="fa-solid fa-print"></i></div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Trung tâm in ấn VDC</h1>
+        </div>
+
+        <div class="control-group" style="background: #eff6ff;">
+            <label><i class="fa-solid fa-database mr-2"></i>Truy xuất VDC Database (Cloud)</label>
+            <select id="selectCompany" class="mb-4">
+                <option value="">-- Đang nạp danh sách công ty... --</option>
+            </select>
+            <button class="btn btn-cloud shadow-lg" id="btnCloud">📥 TẢI DỮ LIỆU ĐÃ ĐỒNG BỘ</button>
+            
+            <div class="progress-container" id="pContainer"><div class="progress-fill" id="pFill"></div></div>
+            <div id="status" class="text-center font-black text-blue-700 text-[10px] mt-2 uppercase italic"></div>
+        </div>
+
         <div class="control-group">
-            <label>1. Loại biểu mẫu in:</label>
+            <label>Cấu hình biểu mẫu:</label>
             <select id="formType" onchange="updateDemo()">
                 <option value="44">Thẻ ATVSLĐ (9 thẻ/A4 - NĐ44)</option>
                 <option value="62">Thẻ An Toàn Điện (8 thẻ/A4 - NĐ62)</option>
             </select>
         </div>
-
-        <div class="control-group" style="background: #f8f9fa;">
-            <label>📂 Chế độ: Nhập từ Excel/ZIP</label>
-            <select id="excelType" style="margin-bottom:10px;">
-                <option value="standard">Mẫu cũ (Ảnh trong Excel - Ô A3)</option>
-                <option value="modern">Mẫu mới (Ảnh trong ZIP - Ô A1 Merge)</option>
-            </select>
-            <input type="file" id="excelInput" accept=".xlsx">
-            <button class="btn btn-excel" onclick="processLocalFile()">🚀 TRÍCH XUẤT FILE CỤC BỘ</button>
-        </div>
-
-        <div class="control-group" style="background: #e3f2fd; border-color: #bbdefb;">
-            <label>🌐 Chế độ: Truy xuất VDC Database</label>
-            <input type="text" id="searchMST" placeholder="Nhập Mã Số Thuế để tải dữ liệu...">
-            <button class="btn btn-cloud" onclick="loadFromCloud()">📥 TẢI DỮ LIỆU ĐÃ ĐỒNG BỘ</button>
-        </div>
-
-        <div id="status" style="margin-top:15px; font-weight:bold; color:#007bff; text-align:center;"></div>
     </div>
 
-    <div class="demo-section" id="demoArea">
-        <label style="color:#7f8c8d; margin-bottom:15px;">HÌNH ẢNH THẺ MẪU (DEMO)</label>
-        <div id="demoContent">
-            <div id="card44" class="card-preview" style="width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat; position:relative; display:flex; flex-direction:column; align-items:center; padding:5mm 0; box-sizing:border-box; background-color:#fff;">
-                <div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center; text-transform:uppercase; padding:0 5px;">Tên Đơn Vị Công Tác</div>
-                <div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div>
-                <div style="width:20mm; height:30mm; border:0.5px solid #000; background:#eee; margin:5mm 0; display:flex; align-items:center; justify-content:center; font-size:8pt; color:#888;">ẢNH 2x3</div>
-                <div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VT</div>
-            </div>
-        </div>
-        <p id="demoDesc" style="font-size:12px; color:#95a5a6; margin-top:15px;">Quy chuẩn: 62mm x 90mm (NĐ 44)</p>
+    <div class="demo-section text-center p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+        <label class="mb-4">HÌNH ẢNH THẺ MẪU</label>
+        <div id="demoContent" class="flex justify-center"></div>
+        <p id="demoDesc" class="text-[10px] font-black text-slate-400 mt-6 uppercase"></p>
     </div>
 
-    <div id="previewSection">
-        <h3 style="color:#2c3e50;">Danh sách học viên sẵn sàng in:</h3>
+    <div id="previewSection" class="col-span-2 hidden mt-6 border-t-4 border-blue-600 pt-6">
         <table id="previewTable">
             <thead>
                 <tr>
-                    <th>STT</th>
-                    <th>Ảnh</th>
+                    <th class="w-16">STT</th>
+                    <th class="w-24">Ảnh</th>
                     <th>Họ và Tên</th>
-                    <th>Số Thẻ / CCCD</th>
-                    <th>Đơn vị</th>
+                    <th>CCCD / Định danh</th>
+                    <th>Đơn vị công tác</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <button class="btn btn-print" onclick="executePrint()">🖨️ XÁC NHẬN VÀ MỞ TRANG IN TỰ ĐỘNG</button>
+        <button class="btn btn-print shadow-2xl" onclick="executePrint()">🚀 XÁC NHẬN VÀ MỞ TRANG IN</button>
     </div>
 </div>
 
 <script type="module">
-    import { db, ref, get, child } from './js/firebase-config.js';
+    import { db, ref, get } from './js/firebase-config.js';
 
-    // 1. CẬP NHẬT DEMO THEO LỰA CHỌN
+    // 1. NẠP DANH SÁCH CÔNG TY KHI MỞ TRANG
+    window.onload = async () => {
+        const selectComp = document.getElementById('selectCompany');
+        try {
+            const snapshot = await get(ref(db, 'HocVien'));
+            if (snapshot.exists()) {
+                let html = '<option value="">-- Chọn công ty để tải học viên --</option>';
+                const allComps = snapshot.val();
+                Object.keys(allComps).forEach(mst => {
+                    const studentsInMst = Object.values(allComps[mst]);
+                    const firstStudent = studentsInMst[0];
+                    const tenCty = firstStudent.tenCty || firstStudent.donvi || "Công ty chưa đặt tên";
+                    html += `<option value="${mst}">${tenCty} (${mst}) - [${studentsInMst.length} HV]</option>`;
+                });
+                selectComp.innerHTML = html;
+            } else { selectComp.innerHTML = '<option value="">Chưa có dữ liệu trên Cloud</option>'; }
+        } catch (e) { selectComp.innerHTML = '<option value="">Lỗi kết nối Firebase</option>'; }
+        updateDemo();
+    };
+
+    // 2. TẢI DỮ LIỆU TỪ CLOUD (FIX LỖI UNDEFINED & THÊM PROGRESS)
+    document.getElementById('btnCloud').onclick = async () => {
+        const mst = document.getElementById('selectCompany').value;
+        const status = document.getElementById('status');
+        const pContainer = document.getElementById('pContainer');
+        const pFill = document.getElementById('pFill');
+        
+        if(!mst) return alert("Vui lòng chọn công ty!");
+
+        status.innerText = "⏳ Đang kết nối VDC Database...";
+        pContainer.style.display = 'block';
+        pFill.style.width = '30%';
+
+        try {
+            const snapshot = await get(ref(db, `HocVien/${mst}`));
+            if (snapshot.exists()) {
+                pFill.style.width = '70%';
+                const data = snapshot.val();
+                let students = [];
+                
+                // FIX LỖI UNDEFINED: Khớp chính xác tên trường dữ liệu từ loadExcel
+                Object.values(data).forEach(s => {
+                    students.push({
+                        name: s.hoten || s.HoTen || "N/A",
+                        cccd: s.cccd || s.CCCD || "Trống",
+                        photo: s.PhotoUrl || s.photoUrl || s.url || "", // Lấy link ảnh từ Drive
+                        company: s.tenCty || s.donvi || "VDC"
+                    });
+                });
+
+                renderTable(students);
+                pFill.style.width = '100%';
+                status.innerText = `✅ Đã nạp thành công ${students.length} học viên.`;
+                setTimeout(() => pContainer.style.display = 'none', 1000);
+            } else {
+                status.innerText = "❌ Không có dữ liệu.";
+                pContainer.style.display = 'none';
+            }
+        } catch (e) { 
+            status.innerText = "❌ Lỗi kết nối!"; 
+            pContainer.style.display = 'none';
+        }
+    };
+
+    function renderTable(data) {
+        const tbody = document.querySelector("#previewTable tbody");
+        tbody.innerHTML = data.map((s, i) => `
+            <tr>
+                <td class="font-black text-slate-400">${i+1}</td>
+                <td><img src="${s.photo || './img/no-avatar.png'}" class="preview-img" onerror="this.src='./img/no-avatar.png'"></td>
+                <td class="font-black text-slate-900 uppercase text-left pl-10">${s.name}</td>
+                <td class="font-bold text-blue-700 font-mono">${s.cccd}</td>
+                <td class="text-[10px] font-black uppercase text-slate-500">${s.company}</td>
+            </tr>
+        `).join('');
+        sessionStorage.setItem('final_data', JSON.stringify(data));
+        document.getElementById('previewSection').classList.remove('hidden');
+    }
+
     window.updateDemo = function() {
         const type = document.getElementById('formType').value;
         const content = document.getElementById('demoContent');
         const desc = document.getElementById('demoDesc');
-        
         if (type === '44') {
-            content.innerHTML = `<div class="card-preview" style="width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat; position:relative; display:flex; flex-direction:column; align-items:center; padding:5mm 0; box-sizing:border-box; background-color:#fff;"><div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center;">ĐƠN VỊ MẪU</div><div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div><div style="width:20mm; height:30mm; border:0.5px solid #000; background:#eee; margin:5mm 0;"></div><div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VDC</div></div>`;
-            desc.innerText = "Quy chuẩn: 62mm x 90mm (Khổ dọc)";
+            content.innerHTML = `<div style="width:62mm; height:90mm; background:url('./doctemplate/backgroundTheATVSLD.png') center/100% 100% no-repeat; display:flex; flex-direction:column; align-items:center; padding:5mm 0; background-color:#fff; border:1px solid #ddd;"><div style="font-size:8pt; font-weight:bold; height:35px; display:flex; align-items:center;">ĐƠN VỊ MẪU</div><div style="font-weight:bold; font-size:9pt; color:#003399; margin-top:2mm;">THẺ AN TOÀN VỆ SINH LAO ĐỘNG</div><div style="width:20mm; height:30mm; border:1px solid #000; background:#eee; margin:5mm 0;"></div><div style="font-size:10pt; font-weight:bold; margin-top:auto; padding-bottom:5mm;">Số: 01/2026/VDC</div></div>`;
+            desc.innerText = "Quy chuẩn NĐ 44: 62mm x 90mm";
         } else {
-            content.innerHTML = `<div class="card-preview" style="width:85mm; height:53mm; border:1.2mm double #CC0000; background-color:#FFEA00; box-shadow:inset 0 0 0 0.4mm #000; display:flex; flex-direction:column; align-items:center; padding:3mm 0; box-sizing:border-box;"><div style="font-size:8pt; font-weight:bold;">ĐƠN VỊ MẪU</div><div style="font-size:11pt; font-weight:bold; color:#CC0000; margin:2mm 0;">THẺ AN TOÀN ĐIỆN</div><div style="width:22mm; height:30mm; border:0.5px solid #000; background:#fff;"></div><div style="font-size:9pt; font-weight:bold; margin-top:2mm;">Số: CCCD_MAU</div></div>`;
-            desc.innerText = "Quy chuẩn: 85mm x 53mm (Khổ ngang)";
+            content.innerHTML = `<div style="width:85mm; height:53mm; border:1.2mm double #CC0000; background-color:#FFEA00; display:flex; flex-direction:column; align-items:center; padding:3mm 0;"><div style="font-size:8pt; font-weight:bold;">ĐƠN VỊ MẪU</div><div style="font-size:11pt; font-weight:bold; color:#CC0000; margin:2mm 0;">THẺ AN TOÀN ĐIỆN</div><div style="width:22mm; height:30mm; border:1px solid #000; background:#fff;"></div><div style="font-size:9pt; font-weight:bold; margin-top:2mm;">Số: CCCD_MAU</div></div>`;
+            desc.innerText = "Quy chuẩn NĐ 62: 85mm x 53mm";
         }
     }
 
-    // 2. TRUY XUẤT DỮ LIỆU TỪ CLOUD (FIREBASE)
-    window.loadFromCloud = async function() {
-        const mst = document.getElementById('searchMST').value.trim();
-        const status = document.getElementById('status');
-        if(!mst) return alert("Vui lòng nhập Mã số thuế!");
-
-        status.innerText = "⏳ Đang kết nối Database...";
-        try {
-            const snapshot = await get(child(ref(db), `HocVien/${mst}`));
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                let students = [];
-                Object.keys(data).forEach(cccd => {
-                    const s = data[cccd];
-                    students.push({ name: s.HoTen, cccd: s.CCCD, photo: s.PhotoUrl, company: s.DonVi });
-                });
-                renderTable(students);
-                status.innerText = `✅ Đã tải ${students.length} học viên từ Cloud.`;
-            } else {
-                status.innerText = "❌ Không tìm thấy dữ liệu cho MST này.";
-            }
-        } catch (e) { status.innerText = "❌ Lỗi kết nối Firebase!"; }
-    }
-
-    // 3. HIỂN THỊ BẢNG PREVIEW
-    function renderTable(data) {
-        const tbody = document.querySelector("#previewTable tbody");
-        tbody.innerHTML = "";
-        data.forEach((s, i) => {
-            tbody.innerHTML += `<tr><td>${i+1}</td><td><img src="${s.photo}" class="preview-img"></td><td>${s.name}</td><td>${s.cccd}</td><td>${s.company}</td></tr>`;
-        });
-        sessionStorage.setItem('final_data', JSON.stringify(data));
-        document.getElementById('previewSection').style.display = "block";
-    }
-
-    // 4. CHUYỂN SANG TRANG IN
     window.executePrint = function() {
         const type = document.getElementById('formType').value;
         window.location.href = `./doctemplate/printThe${type}.html`;
     }
-    
-    // Giữ lại hàm processLocalFile cho các trường hợp in nhanh từ Excel cục bộ (logic v2.3)
-    // ...
 </script>
 </body>
 </html>
