@@ -1,197 +1,65 @@
 <style>
-    /* CSS CỨNG ĐỂ ĐẢM BẢO GIAO DIỆN KHÔNG BỊ VỠ */
-    .kanban-wrapper {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        background-color: #f8fafc;
-        padding: 1.5rem;
-        font-family: 'Inter', sans-serif;
-    }
-
-    .kanban-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: white;
-        padding: 1.25rem 1.5rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-
-    /* GRID HỆ THỐNG 5 CỘT */
-    .kanban-board {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr); /* Ép chia đúng 5 cột */
-        gap: 1.25rem;
-        flex: 1;
-        overflow: hidden;
-        min-width: 1200px; /* Tránh bị bóp méo trên màn hình nhỏ */
-    }
-
-    .kanban-col {
-        background-color: rgba(241, 245, 249, 0.8); /* slate-100 */
-        border-radius: 24px;
-        padding: 1rem;
-        border: 2px solid #e2e8f0;
-        display: flex;
-        flex-direction: column;
-        max-height: 100%;
-    }
-
-    .col-title {
-        font-size: 10px;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #64748b;
-        margin-bottom: 1rem;
-        padding: 0 0.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .col-count {
-        background: white;
-        padding: 2px 8px;
-        border-radius: 8px;
-        color: #1e293b;
-        box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.05);
-    }
-
-    /* THẺ ĐƠN HÀNG (CARD) */
-    .kanban-card {
-        background: white;
-        border-radius: 16px;
-        padding: 1rem;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        cursor: grab;
-        transition: all 0.2s ease;
-        margin-bottom: 1rem;
-    }
-
-    .kanban-card:hover {
-        transform: translateY(-4px);
-        border-color: #3b82f6;
-        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
-    }
-
+    .kanban-wrapper { display: flex; flex-direction: column; height: 100%; background: #f8fafc; padding: 1.5rem; font-family: sans-serif; }
+    .kanban-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 1.25rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #e2e8f0; }
+    .kanban-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; flex: 1; min-width: 1200px; }
+    .kanban-col { background: rgba(241, 245, 249, 0.8); border-radius: 24px; padding: 1rem; border: 2px solid #e2e8f0; display: flex; flex-direction: column; }
+    .col-title { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 1rem; display: flex; justify-content: space-between; }
+    .drop-zone { flex: 1; overflow-y: auto; min-height: 300px; padding-bottom: 50px; }
+    
+    /* STYLE THẺ CARD */
+    .kanban-card { background: white; border-radius: 16px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); cursor: grab; margin-bottom: 12px; }
     .card-mst { font-size: 11px; font-weight: 900; color: #2563eb; font-family: monospace; }
-    .card-name { font-size: 12px; font-weight: 800; color: #1e293b; margin-top: 4px; text-transform: uppercase; }
-    .card-desc { font-size: 10px; color: #64748b; margin-top: 8px; line-height: 1.4; }
-
-    /* VÙNG CHỨA THẺ KÉO THẢ */
-    .drop-zone {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 200px;
-        padding-right: 4px;
-    }
-    .drop-zone::-webkit-scrollbar { width: 4px; }
-    .drop-zone::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-    /* MODAL TÙY CHỈNH */
-    .vdc-modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(4px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-    }
-    .vdc-modal.active { display: flex; }
+    .card-name { font-size: 12px; font-weight: 800; color: #1e293b; margin: 4px 0; text-transform: uppercase; }
+    .card-desc { font-size: 10px; color: #64748b; line-height: 1.4; }
 </style>
 
-<div class="kanban-wrapper animate-fade-in">
-    
+<div class="kanban-wrapper">
     <div class="kanban-header">
         <div class="flex items-center gap-4">
-            <div style="background: #2563eb; color: white; width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);">
-                <i class="fa-solid fa-chalkboard-user text-xl"></i>
+            <div style="background:#2563eb; width:45px; height:45px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white;">
+                <i class="fa-solid fa-chalkboard-user"></i>
             </div>
             <div>
-                <h2 style="font-size: 1.25rem; font-weight: 900; color: #1e293b; text-transform: uppercase; letter-spacing: -0.025em; margin: 0;">Điều phối huấn luyện</h2>
-                <p style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px;">Hệ thống quản lý tiến độ VDC</p>
+                <h2 style="margin:0; font-size:18px; font-weight:900; text-transform:uppercase;">Điều phối huấn luyện</h2>
+                <p style="margin:0; font-size:10px; color:#94a3b8; font-weight:bold; letter-spacing:1px;">VDC CRM SYSTEM</p>
             </div>
         </div>
-        
-        <button onclick="document.getElementById('modalCreate').classList.add('active')" 
-                style="background: #0f172a; color: white; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-plus" style="color: #3b82f6;"></i> Lên Đơn Mới
-        </button>
+        <button onclick="document.getElementById('modalCreate').style.display='flex'" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:900; cursor:pointer; font-size:11px;">+ LÊN ĐƠN MỚI</button>
     </div>
 
     <div class="kanban-board">
-        
         <div class="kanban-col">
-            <div class="col-title">
-                <span><i class="fa-solid fa-file-invoice-dollar mr-1"></i> 1. Báo Giá</span>
-                <span id="count_B1" class="col-count">0</span>
-            </div>
+            <div class="col-title"><span>1. Báo Giá</span> <span id="count_B1">0</span></div>
             <div id="col_B1_BaoGia" ondrop="dropCard(event, 'B1_BaoGia')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
-
-        <div class="kanban-col" style="background-color: rgba(239, 246, 255, 0.8); border-color: #bfdbfe;">
-            <div class="col-title" style="color: #1d4ed8;">
-                <span><i class="fa-solid fa-box-open mr-1"></i> 2. Chuẩn Bị</span>
-                <span id="count_B4" class="col-count" style="color: #1d4ed8;">0</span>
-            </div>
+        <div class="kanban-col" style="background:#eff6ff;">
+            <div class="col-title"><span>2. Chuẩn Bị</span> <span id="count_B4">0</span></div>
             <div id="col_B4_ChuanBi" ondrop="dropCard(event, 'B4_ChuanBi')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
-
-        <div class="kanban-col" style="background-color: rgba(FFFBEB, 0.8); border-color: #fde68a;">
-            <div class="col-title" style="color: #b45309;">
-                <span><i class="fa-solid fa-person-chalkboard mr-1"></i> 3. Đang Dạy</span>
-                <span id="count_B5" class="col-count" style="color: #b45309;">0</span>
-            </div>
+        <div class="kanban-col" style="background:#fffbeb;">
+            <div class="col-title"><span>3. Đang Dạy</span> <span id="count_B5">0</span></div>
             <div id="col_B5_DangDay" ondrop="dropCard(event, 'B5_DangDay')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
-
-        <div class="kanban-col" style="background-color: rgba(EEF2FF, 0.8); border-color: #c7d2fe;">
-            <div class="col-title" style="color: #4338ca;">
-                <span><i class="fa-solid fa-print mr-1"></i> 4. In Phôi</span>
-                <span id="count_B6" class="col-count" style="color: #4338ca;">0</span>
-            </div>
+        <div class="kanban-col" style="background:#f5f3ff;">
+            <div class="col-title"><span>4. In Phôi</span> <span id="count_B6">0</span></div>
             <div id="col_B6_ChoInPhoi" ondrop="dropCard(event, 'B6_ChoInPhoi')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
-
-        <div class="kanban-col" style="background-color: rgba(ECFDF5, 0.8); border-color: #a7f3d0;">
-            <div class="col-title" style="color: #047857;">
-                <span><i class="fa-solid fa-circle-check mr-1"></i> 5. Hoàn Tất</span>
-                <span id="count_B7" class="col-count" style="color: #047857;">0</span>
-            </div>
+        <div class="kanban-col" style="background:#f0fdf4;">
+            <div class="col-title"><span>5. Hoàn Tất</span> <span id="count_B7">0</span></div>
             <div id="col_B7_HoanTat" ondrop="dropCard(event, 'B7_HoanTat')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
-
     </div>
 </div>
 
-<div id="modalCreate" class="vdc-modal">
-    <div style="background: white; width: 100%; max-width: 450px; border-radius: 30px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-        <div style="background: #0f172a; padding: 1.5rem; color: white; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">Lên Đơn Huấn Luyện Mới</h3>
-            <button onclick="document.getElementById('modalCreate').classList.remove('active')" style="background: none; border: none; color: white; cursor: pointer; font-size: 20px;"><i class="fa-solid fa-xmark"></i></button>
+<div id="modalCreate" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;">
+    <div style="background:white; width:400px; border-radius:20px; padding:25px;">
+        <h3 style="margin-top:0; text-transform:uppercase; font-size:14px; font-weight:900;">Lên đơn huấn luyện</h3>
+        <input type="text" id="newMST" placeholder="Mã số thuế..." style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; font-weight:bold;">
+        <input type="text" id="newTenCTY" placeholder="Tên công ty..." style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+        <textarea id="newNoiDung" placeholder="Nội dung huấn luyện..." rows="3" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;"></textarea>
+        <div style="display:flex; gap:10px;">
+            <button onclick="submitNewClass()" style="flex:1; background:#2563eb; color:white; border:none; padding:12px; border-radius:8px; font-weight:900; cursor:pointer;">TẠO ĐƠN</button>
+            <button onclick="document.getElementById('modalCreate').style.display='none'" style="background:#f1f5f9; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">HỦY</button>
         </div>
-        <form id="formCreateClass" style="padding: 2rem;">
-            <div style="margin-bottom: 1.25rem;">
-                <label style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px;">Mã số thuế</label>
-                <input type="text" id="newMST" placeholder="Nhập MST..." style="width: 100%; padding: 1rem; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; font-weight: 900; color: #2563eb; outline: none; box-sizing: border-box;">
-            </div>
-            <div style="margin-bottom: 1.25rem;">
-                <label style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px;">Tên đơn vị</label>
-                <input type="text" id="newTenCTY" placeholder="Tên công ty tự động..." style="width: 100%; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 12px; font-weight: 700; box-sizing: border-box;">
-            </div>
-            <div style="margin-bottom: 2rem;">
-                <label style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px;">Nội dung</label>
-                <textarea id="newNoiDung" placeholder="Nhóm huấn luyện..." rows="3" style="width: 100%; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 12px; font-weight: 600; box-sizing: border-box;"></textarea>
-            </div>
-            <button type="submit" style="width: 100%; background: #2563eb; color: white; padding: 1.25rem; border-radius: 15px; border: none; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);">Khởi tạo đơn hàng</button>
-        </form>
     </div>
 </div>
