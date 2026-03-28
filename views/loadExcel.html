@@ -2,170 +2,173 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VDC CRM - Recovery v7.7</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>VDC CRM - Clear View v8.0</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* CSS Khôi phục cấu trúc Dashboard */
-        body { margin: 0; padding: 0; background: #f8fafc; overflow: hidden; }
+        /* Tăng độ đậm và rõ nét cho toàn bộ font */
+        body { background: #f1f5f9; color: #0f172a; font-weight: 500; }
+        
         .sidebar-vdc { 
             width: 360px; height: 100vh; background: white; 
-            border-right: 1px solid #e2e8f0; display: flex; 
-            flex-direction: column; flex-shrink: 0; z-index: 50;
-            box-shadow: 10px 0 30px -15px rgba(0,0,0,0.05);
+            border-right: 2px solid #cbd5e1; /* Viền đậm hơn */
         }
-        .main-vdc { flex: 1; height: 100vh; display: flex; flex-direction: column; padding: 30px; }
-        
-        /* Vùng chọn file (Làm to và đẹp) */
-        .drop-zone {
-            border: 2px dashed #e2e8f0; border-radius: 20px; 
-            padding: 30px 20px; text-align: center; transition: all 0.3s;
-            position: relative; background: #fff; cursor: pointer;
-        }
-        .drop-zone:hover { border-color: #3b82f6; background: #eff6ff; }
-        .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-        /* Khung bảng học viên */
-        .table-box {
-            background: white; border-radius: 24px; flex: 1;
-            display: flex; flex-direction: column; overflow: hidden;
-            border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        /* Label phải đen và rõ */
+        label { 
+            color: #1e293b !important; 
+            font-weight: 800 !important; 
+            font-size: 12px !important;
+            margin-bottom: 6px;
+            display: block;
         }
-        .scroll-area { flex: 1; overflow: auto; padding: 0 20px 20px 20px; }
+
+        /* Ô nhập liệu có viền rõ ràng */
+        input[type="text"], select {
+            border: 2px solid #cbd5e1 !important;
+            color: #000 !important;
+            font-weight: 700 !important;
+            background: #fff !important;
+        }
+        input::placeholder { color: #94a3b8; font-weight: 400; }
+
+        /* Vùng chọn file */
+        .file-area {
+            border: 2px dashed #64748b;
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 30px 10px;
+            text-align: center;
+        }
+
+        /* BẢNG DỮ LIỆU CỰC KỲ RÕ NÉT */
+        .main-table {
+            background: white;
+            border-radius: 15px;
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+        }
         
-        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        
         th { 
-            position: sticky; top: 0; background: white; z-index: 10; padding: 15px;
-            font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase;
-            border-bottom: 1px solid #f1f5f9; text-align: left;
+            background: #1e293b; /* Nền tối */
+            color: #ffffff; /* Chữ trắng */
+            padding: 15px;
+            font-size: 13px;
+            font-weight: 900;
+            text-align: left;
+            text-transform: uppercase;
         }
-        .row-item td { padding: 12px 15px; background: white; border-top: 1px solid #f8fafc; border-bottom: 1px solid #f8fafc; font-size: 13px; }
-        .row-item td:first-child { border-radius: 12px 0 0 12px; text-align: center; font-weight: bold; color: #cbd5e1; }
-        .row-item td:last-child { border-radius: 0 12px 12px 0; text-align: right; }
-        .row-item:hover td { background: #f8faff; border-color: #e0e7ff; }
 
-        .img-avatar { width: 42px; height: 58px; border-radius: 6px; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn-vdc { transition: all 0.2s; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .btn-vdc:active { scale: 0.96; }
+        td { 
+            padding: 12px 15px; 
+            border-bottom: 1px solid #cbd5e1; 
+            color: #000; /* Chữ đen tuyệt đối */
+            font-size: 14px; /* Tăng size chữ */
+        }
+
+        .row-vdc:nth-child(even) { background: #f8fafc; }
+        .row-vdc:hover { background: #f1f5f9; }
+
+        /* Avatar to và rõ */
+        .img-hv { 
+            width: 50px; height: 70px; 
+            border: 2px solid #1e293b; 
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .status-ok { color: #059669; font-weight: 900; }
     </style>
 </head>
-<body>
+<body class="flex overflow-hidden">
 
-    <div class="flex">
-        <aside class="sidebar-vdc p-8 animate-fade-in">
-            <div class="mb-8">
-                <h1 class="text-2xl font-black text-slate-800 tracking-tighter">VDC<span class="text-blue-600">.CRM</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Safety Cloud Sync v7.7</p>
+    <aside class="sidebar-vdc p-6 flex flex-col shadow-xl">
+        <div class="mb-8 border-b-4 border-blue-600 pb-4">
+            <h1 class="text-3xl font-black text-slate-900 tracking-tighter">VDC<span class="text-blue-600">.CRM</span></h1>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Hệ thống nạp dữ liệu v8.0</p>
+        </div>
+
+        <div class="space-y-6 flex-1 overflow-y-auto pr-2">
+            <div>
+                <label>PHƯƠNG THỨC NẠP ẢNH:</label>
+                <select id="templateType" class="w-full p-3 rounded-xl outline-none focus:border-blue-600">
+                    <option value="excel_img">1. ẢNH TRONG FILE EXCEL</option>
+                    <option value="zip_img">2. ẢNH TRONG FILE ZIP RIÊNG</option>
+                </select>
             </div>
 
-            <div class="space-y-6 flex-1 overflow-y-auto pr-2">
-                <div class="bg-slate-100 p-1 rounded-xl flex gap-1">
-                    <button id="m1" class="flex-1 text-[9px] font-bold py-2 rounded-lg bg-white shadow-sm border border-slate-200">ẢNH TRONG EXCEL</button>
-                    <button id="m2" class="flex-1 text-[9px] font-bold py-2 rounded-lg text-slate-400">KÈM FILE ZIP</button>
+            <div class="space-y-4">
+                <div class="file-area group">
+                    <label class="mb-2 uppercase text-blue-700">File Excel (.xlsx)</label>
+                    <input type="file" id="fileExcel" accept=".xlsx" class="text-xs font-bold">
                 </div>
 
-                <div class="space-y-3">
-                    <div class="drop-zone group">
-                        <i class="fa-solid fa-file-excel text-3xl text-slate-300 group-hover:text-blue-500 mb-2"></i>
-                        <p class="text-[10px] font-black text-slate-500 uppercase">Chọn file Excel</p>
-                        <input type="file" id="fileExcel" accept=".xlsx">
-                    </div>
-                    <div id="zipSection" class="hidden drop-zone group border-emerald-100 bg-emerald-50/30">
-                        <i class="fa-solid fa-file-zipper text-3xl text-emerald-300 group-hover:text-emerald-500 mb-2"></i>
-                        <p class="text-[10px] font-black text-emerald-500 uppercase">Chọn file ZIP ảnh</p>
-                        <input type="file" id="fileZip" accept=".zip">
-                    </div>
-                </div>
-
-                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Mã số thuế</label>
-                        <input type="text" id="inputMST" class="w-full bg-transparent text-xs font-black border-none focus:ring-0 p-0" placeholder="...">
-                    </div>
-                    <div class="border-t border-slate-200 pt-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Tên công ty</label>
-                        <input type="text" id="inputTenCty" class="w-full bg-transparent text-xs font-bold text-blue-600 border-none focus:ring-0 p-0 italic" placeholder="...">
-                    </div>
-                </div>
-
-                <button id="btnPreview" class="btn-vdc w-full bg-slate-900 text-white py-4 rounded-2xl shadow-xl hover:bg-black text-[11px]">🔍 TRÍCH XUẤT DỮ LIỆU</button>
-
-                <div id="syncBox" class="hidden space-y-4 pt-4 border-t border-slate-200">
-                    <button id="btnSync" class="btn-vdc w-full bg-blue-600 text-white py-5 rounded-2xl shadow-xl hover:bg-blue-700 text-[11px] flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i> ĐẨY LÊN VDC CLOUD
-                    </button>
-                    
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-[10px] font-black text-slate-400 uppercase">
-                            <span id="txtStatus">Sẵn sàng...</span>
-                            <span id="txtPercent">0%</span>
-                        </div>
-                        <div class="bg-slate-200 h-1 rounded-full overflow-hidden">
-                            <div id="barFill" class="h-full bg-blue-600 w-0 transition-all duration-300"></div>
-                        </div>
-                    </div>
+                <div id="zipGroup" class="hidden file-area border-emerald-600">
+                    <label class="mb-2 uppercase text-emerald-700">File Ảnh (.zip)</label>
+                    <input type="file" id="fileZip" accept=".zip" class="text-xs font-bold">
                 </div>
             </div>
-        </aside>
 
-        <main class="main-vdc">
-            <header class="flex justify-between items-end mb-8 px-4">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">HỌC VIÊN ĐÃ QUÉT</h2>
-                    <p class="text-xs text-slate-400 font-medium">Hệ thống xử lý ô gộp & dữ liệu đa tầng chuẩn VDC</p>
-                </div>
-                <div class="bg-white px-6 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-                    <i class="fa-solid fa-users text-blue-500"></i>
-                    <span id="count" class="text-sm font-black text-slate-700">00</span>
-                </div>
-            </header>
+            <div class="bg-slate-100 p-4 rounded-xl border-2 border-slate-200">
+                <label>MÃ SỐ THUẾ:</label>
+                <input type="text" id="inputMST" class="w-full p-2 mb-3 rounded-lg" placeholder="Chờ quét file...">
+                <label>TÊN CÔNG TY:</label>
+                <input type="text" id="inputTenCty" class="w-full p-2 rounded-lg italic" placeholder="Chờ quét file...">
+            </div>
 
-            <div class="table-box">
-                <div class="scroll-area">
-                    <table id="vdcTable">
-                        <thead>
-                            <tr>
-                                <th class="w-16">STT</th>
-                                <th class="w-24">Ảnh</th>
-                                <th>Họ và Tên</th>
-                                <th>Ngày sinh</th>
-                                <th>CCCD</th>
-                                <th>Chức vụ</th>
-                                <th>Đơn vị</th>
-                                <th class="text-right">Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr id="empty"><td colspan="8" class="p-32 text-center opacity-10"><i class="fa-solid fa-box-open text-6xl block mb-4"></i><p class="font-black uppercase">Chưa có dữ liệu</p></td></tr>
+            <button id="btnPreview" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg transition-all uppercase tracking-widest">
+                🔍 Trích xuất danh sách
+            </button>
+
+            <div id="syncSection" class="hidden pt-6 border-t-2 border-slate-200 space-y-4">
+                <button id="btnSync" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-xl shadow-xl flex items-center justify-center gap-2 uppercase tracking-tighter">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Đẩy lên VDC Cloud
+                </button>
+                <div id="statusText" class="text-center font-black text-blue-700 text-xs uppercase animate-pulse"></div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-8 flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900 uppercase">Học viên trích xuất từ Excel</h2>
+            <div class="bg-slate-900 text-white px-6 py-2 rounded-full font-black text-lg shadow-lg">
+                <span id="countAll">00</span> <span class="text-xs uppercase ml-1">Người</span>
+            </div>
+        </div>
+
+        <div class="main-table shadow-2xl">
+            <div class="overflow-auto h-[calc(100vh-180px)]">
+                <table id="hocVienTable">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ảnh</th>
+                            <th>Họ và Tên</th>
+                            <th>Ngày sinh</th>
+                            <th>CCCD / Định danh</th>
+                            <th>Đơn vị / Nhóm</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         </tbody>
-                    </table>
-                </div>
+                </table>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <script type="module">
         import { db, ref, set } from '../js/firebase-config.js';
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxKY8mO5USmDe3DyiYPNLpt0x64l8YN_Z_4TgoEdUs1F0Nw_pnjZd1XU6V2lL_Wl_lS/exec";
-        
-        let globalHocVien = [];
-        let mode = 1;
 
-        // Xử lý Giao diện
-        document.getElementById('m1').onclick = () => { mode = 1; updateUI(); }
-        document.getElementById('m2').onclick = () => { mode = 2; updateUI(); }
-        function updateUI() {
-            document.getElementById('m1').className = mode === 1 ? "flex-1 text-[9px] font-bold py-2 rounded-lg bg-white shadow-sm border border-slate-200" : "flex-1 text-[9px] font-bold py-2 text-slate-400";
-            document.getElementById('m2').className = mode === 2 ? "flex-1 text-[9px] font-bold py-2 rounded-lg bg-white shadow-sm border border-slate-200" : "flex-1 text-[9px] font-bold py-2 text-slate-400";
-            document.getElementById('zipSection').classList.toggle('hidden', mode === 1);
-        }
+        let hocVienList = [];
 
-        // Logic trích xuất (v6.2 logic)
+        // Logic lấy giá trị ô gộp và rich text chuẩn v6.2
         const getSafeVal = (sheet, addr) => {
             const cell = sheet.getCell(addr);
             const target = cell.isMerged && cell.master ? cell.master : cell;
@@ -180,71 +183,71 @@
 
         const superClean = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "") : "";
 
+        document.getElementById('templateType').onchange = (e) => {
+            document.getElementById('zipGroup').classList.toggle('hidden', e.target.value !== 'zip_img');
+        };
+
         document.getElementById('btnPreview').onclick = async () => {
+            const type = document.getElementById('templateType').value;
             const fileEx = document.getElementById('fileExcel').files[0];
             const fileZi = document.getElementById('fileZip').files[0];
-            if (!fileEx) return alert("Chọn Excel!");
+            if (!fileEx) return alert("Chọn file Excel!");
+            
+            try {
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(await fileEx.arrayBuffer());
+                const sheet = workbook.worksheets[0];
 
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG PHÂN TÍCH...";
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(await fileEx.arrayBuffer());
-            const sheet = workbook.worksheets[0];
-
-            // Trích xuất MST/Cty
-            if(mode === 1) {
+                // Lấy thông tin chung
                 document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
                 document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
-            }
 
-            // Bóc ảnh
-            const anhExcel = {};
-            sheet.getImages().forEach(img => {
-                if (img.range.tl.nativeCol >= 7) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer;
-            });
+                const anhExcel = {};
+                sheet.getImages().forEach(img => {
+                    if (img.range.tl.nativeCol >= 7) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer;
+                });
 
-            let anhZip = {};
-            if (mode === 2 && fileZi) {
-                const zip = await JSZip.loadAsync(fileZi);
-                for (let f in zip.files) if (f.match(/\.(jpg|jpeg|png)$/i)) {
-                    const n = f.split('/').pop().split('.').shift();
-                    anhZip[superClean(n)] = await zip.files[f].async("arraybuffer");
+                let anhZip = {};
+                if (type === 'zip_img' && fileZi) {
+                    const zipData = await JSZip.loadAsync(fileZi);
+                    for (let f in zipData.files) if (f.match(/\.(jpg|jpeg|png)$/i)) {
+                        const n = f.split('/').pop().split('.').shift();
+                        anhZip[superClean(n)] = await zipData.files[f].async("arraybuffer");
+                    }
                 }
-            }
 
-            globalHocVien = [];
-            sheet.eachRow((row, i) => {
-                const stt = row.getCell(1).text.trim();
-                if (i >= 10 && stt && !isNaN(stt)) {
-                    const hoten = mode === 1 ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
-                    globalHocVien.push({
-                        stt: globalHocVien.length + 1, hoten,
-                        ngaysinh: mode === 1 ? row.getCell(4).text : row.getCell(6).text,
-                        cccd: mode === 1 ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
-                        donvi: mode === 1 ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
-                        congviec: mode === 1 ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
-                        photo: anhExcel[i-1] || anhZip[superClean(hoten)] || null
-                    });
-                }
-            });
+                hocVienList = [];
+                sheet.eachRow((row, i) => {
+                    const stt = row.getCell(1).text.trim();
+                    if (i >= 10 && stt && !isNaN(stt)) {
+                        const hoten = (type === 'excel_img') ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
+                        hocVienList.push({
+                            stt: hocVienList.length + 1, hoten,
+                            ngaysinh: (type === 'excel_img') ? row.getCell(4).text : row.getCell(6).text,
+                            cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
+                            donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
+                            photo: anhExcel[i-1] || anhZip[superClean(hoten)] || null
+                        });
+                    }
+                });
 
-            renderTable();
-            document.getElementById('syncBox').classList.remove('hidden');
-            document.getElementById('count').innerText = globalHocVien.length;
-            document.getElementById('btnPreview').innerText = "🔍 QUÉT LẠI";
+                renderTable();
+                document.getElementById('syncSection').classList.remove('hidden');
+                document.getElementById('countAll').innerText = hocVienList.length;
+            } catch (e) { alert(e.message); }
         };
 
         function renderTable() {
-            const tbody = document.querySelector("#vdcTable tbody");
-            tbody.innerHTML = globalHocVien.map(h => `
-                <tr class="row-item">
-                    <td>${h.stt}</td>
-                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="img-avatar">` : '❌'}</td>
-                    <td class="font-bold text-slate-800">${h.hoten}</td>
-                    <td>${h.ngaysinh}</td>
-                    <td class="font-mono text-slate-500">${h.cccd}</td>
-                    <td class="text-[11px] font-medium">${h.congviec}</td>
-                    <td class="text-[10px] font-black text-slate-400 uppercase">${h.donvi}</td>
-                    <td id="stt-${h.cccd}" class="text-[10px] text-blue-300 font-black italic">CHỜ ĐỒNG BỘ</td>
+            const tbody = document.querySelector("#hocVienTable tbody");
+            tbody.innerHTML = hocVienList.map(h => `
+                <tr class="row-vdc">
+                    <td class="font-black text-slate-400 text-center">${h.stt}</td>
+                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="img-hv">` : '❌'}</td>
+                    <td class="font-black text-slate-900">${h.hoten}</td>
+                    <td class="font-bold">${h.ngaysinh}</td>
+                    <td class="font-bold text-blue-800">${h.cccd}</td>
+                    <td class="font-bold uppercase text-slate-600">${h.donvi}</td>
+                    <td id="stt-${h.cccd}" class="font-black italic text-slate-300">CHỜ ĐỒNG BỘ</td>
                 </tr>
             `).join('');
         }
@@ -252,32 +255,27 @@
         document.getElementById('btnSync').onclick = async () => {
             const mst = document.getElementById('inputMST').value;
             const ten = document.getElementById('inputTenCty').value;
-            if(!mst) return alert("Nhập MST!");
-
             document.getElementById('btnSync').disabled = true;
-            for(let i=0; i<globalHocVien.length; i++) {
-                const s = globalHocVien[i];
-                const pct = Math.round(((i+1)/globalHocVien.length)*100);
-                document.getElementById('barFill').style.width = pct + "%";
-                document.getElementById('txtPercent').innerText = pct + "%";
-                document.getElementById('txtStatus').innerText = `SYNC: ${s.hoten}`;
 
+            for (let i = 0; i < hocVienList.length; i++) {
+                const s = hocVienList[i];
+                document.getElementById('statusText').innerText = `Sync: ${s.hoten}`;
                 let url = "";
-                if(s.photo) {
+                if (s.photo) {
                     const b64 = btoa(new Uint8Array(s.photo).reduce((d,b)=>d+String.fromCharCode(b),''));
                     try {
                         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type:"upload", mst, tenCty:ten, cccd:s.cccd, base64:b64 }) });
                         const json = await res.json();
                         if(json.status === "success") {
                             url = json.fileUrl;
-                            document.getElementById(`stt-${s.cccd}`).innerHTML = `<span class="text-emerald-500">✅ DRIVE OK</span>`;
+                            document.getElementById(`stt-${s.cccd}`).innerHTML = `<span class="status-ok">✅ DRIVE OK</span>`;
                         }
                     } catch(e) {}
                 }
-                const {photo, ...cleanData} = s;
-                await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...cleanData, PhotoUrl: url, Update: new Date().toLocaleString() });
+                const { photo, ...clean } = s;
+                await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...clean, PhotoUrl: url, Update: new Date().toLocaleString() });
             }
-            document.getElementById('txtStatus').innerText = "ĐỒNG BỘ HOÀN TẤT!";
+            document.getElementById('statusText').innerText = "✅ XONG!";
         };
     </script>
 </body>
