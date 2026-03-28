@@ -65,38 +65,67 @@
 </div>
 
 <script type="module">
-    import { db, ref, set, push, onValue, update } from '../js/firebase-config.js';
+    import { db, ref, set, push, onValue, update, get, child } from '../js/firebase-config.js';
 
-    // 1. HÀM TẠO ĐƠN MỚI (Lên đơn)
+    // 1. TỰ ĐỘNG ĐIỀN TÊN CÔNG TY & ĐỊA CHỈ KHI NHẬP MST
+    const inputMST = document.getElementById('newMST');
+    inputMST.addEventListener('input', async (e) => {
+        const mst = e.target.value.trim();
+        if (mst.length >= 10) { // Khi nhập đủ MST (thường 10-13 số)
+            const statusLabel = document.querySelector('#modalCreate p');
+            statusLabel.innerText = "⏳ Đang tìm kiếm đơn vị...";
+            
+            try {
+                // Quét trong thư mục HocVien (Dữ liệu từ loadExcel đã đồng bộ)
+                const snapshot = await get(child(ref(db), `HocVien/${mst}`));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    // Lấy học viên đầu tiên để trích xuất thông tin công ty
+                    const firstKey = Object.keys(data)[0];
+                    const info = data[firstKey];
+                    
+                    document.getElementById('newTenCTY').value = info.tenCty || info.donvi || "";
+                    document.getElementById('newDiaChi').value = info.diaChi || info.address || "Địa chỉ đã có trong hồ sơ";
+                    statusLabel.innerText = "✅ Đã tìm thấy dữ liệu đơn vị cũ.";
+                } else {
+                    statusLabel.innerText = "ℹ️ MST mới (Chưa có trong Database).";
+                }
+            } catch (err) {
+                console.error("Lỗi truy vấn đơn vị:", err);
+            }
+        }
+    });
+
+    // 2. HÀM TẠO ĐƠN MỚI
     window.submitNewClass = async function() {
-        const mst = document.getElementById('newMST').value;
-        const ten = document.getElementById('newTenCTY').value;
-        const noi = document.getElementById('newNoiDung').value;
+        const mst = document.getElementById('newMST').value.trim();
+        const ten = document.getElementById('newTenCTY').value.trim();
+        const dia = document.getElementById('newDiaChi').value.trim();
+        const noi = document.getElementById('newNoiDung').value.trim();
 
         if(!mst || !ten) return alert("Vui lòng điền MST và Tên công ty!");
 
         try {
-            const newOrderRef = push(ref(db, 'Classes')); // Lưu vào nhánh 'Classes'
+            const newOrderRef = push(ref(db, 'Classes'));
             await set(newOrderRef, {
                 mst: mst,
                 tenCty: ten,
+                diaChi: dia,
                 noiDung: noi,
-                status: 'B1_BaoGia', // Mặc định cột 1
+                status: 'B1_BaoGia',
                 createdAt: new Date().toISOString()
             });
             
+            // Đóng Modal và Reset
             document.getElementById('modalCreate').style.display = 'none';
-            // Reset form
-            document.getElementById('newMST').value = "";
-            document.getElementById('newTenCTY').value = "";
-            document.getElementById('newNoiDung').value = "";
+            document.getElementById('formCreateClass').reset();
+            document.querySelector('#modalCreate p').innerText = "Khởi tạo quy trình báo giá mới";
         } catch (e) { alert("Lỗi lưu đơn: " + e.message); }
     };
 
-    // 2. LẮNG NGHE DỮ LIỆU REALTIME
+    // 3. LẮNG NGHE DỮ LIỆU KANBAN (GIỮ NGUYÊN)
     const classRef = ref(db, 'Classes');
     onValue(classRef, (snapshot) => {
-        // Xóa sạch các cột để vẽ lại
         document.querySelectorAll('.drop-zone').forEach(z => z.innerHTML = "");
         const counts = { B1_BaoGia:0, B4_ChuanBi:0, B5_DangDay:0, B6_ChoInPhoi:0, B7_HoanTat:0 };
 
@@ -118,29 +147,18 @@
                 }
             });
         }
-        // Cập nhật số lượng đầu cột
         Object.keys(counts).forEach(key => {
             const el = document.getElementById(`count_${key}`);
             if(el) el.innerText = counts[key];
         });
     });
 
-    // 3. LOGIC KÉO THẢ (DRAG & DROP)
-    window.dragCard = function(ev, id) {
-        ev.dataTransfer.setData("text/plain", id);
-    };
-
-    window.allowDrop = function(ev) {
+    // 4. LOGIC KÉO THẢ (GIỮ NGUYÊN)
+    window.dragCard = (ev, id) => ev.dataTransfer.setData("text", id);
+    window.allowDrop = (ev) => ev.preventDefault();
+    window.dropCard = async (ev, newStatus) => {
         ev.preventDefault();
-    };
-
-    window.dropCard = async function(ev, newStatus) {
-        ev.preventDefault();
-        const id = ev.dataTransfer.getData("text/plain");
-        if (id) {
-            try {
-                await update(ref(db, `Classes/${id}`), { status: newStatus });
-            } catch (e) { console.error("Lỗi cập nhật trạng thái:", e); }
-        }
+        const id = ev.dataTransfer.getData("text");
+        if (id) await update(ref(db, `Classes/${id}`), { status: newStatus });
     };
 </script>
