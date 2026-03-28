@@ -2,14 +2,10 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Lab - Test Preview v6.6</title>
+    <title>VDC Lab - Fix Click v6.7</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.4s ease-out; }
-    </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
@@ -19,57 +15,51 @@
                 <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-800 tracking-tight">VDC Cloud Test</h2>
-            <p class="text-slate-500 text-sm mt-1">Dự án: vdcdaotao-test (v6.6)</p>
+            <p class="text-slate-500 text-sm mt-1">Dự án: vdcdaotao-test (v6.7)</p>
         </div>
 
         <div class="space-y-4">
-            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer relative group">
-                <input type="file" id="testFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
+            <div id="dropZone" class="relative border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer group">
+                <input type="file" id="testFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" accept="image/*">
                 
-                <div id="uploadContent" class="group-hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-image text-slate-400 text-4xl mb-2 group-hover:text-blue-500 transition-colors"></i>
-                    <span id="fileNameDisplay" class="block text-sm font-medium text-slate-600">Bấm để chọn 1 tấm ảnh test</span>
-                    <span class="text-xs text-slate-400 mt-1 block">(JPG, PNG)</span>
+                <div id="uploadContent" class="z-10 relative">
+                    <i class="fa-solid fa-image text-slate-400 text-5xl mb-3 group-hover:text-blue-500 transition-colors"></i>
+                    <p id="fileNameDisplay" class="text-sm font-bold text-slate-600">Bấm vào đây để chọn ảnh</p>
+                    <p class="text-xs text-slate-400 mt-1">Hệ thống sẽ hiện ảnh xem trước ngay</p>
                 </div>
 
-                <div id="local-preview-box" class="hidden mt-3 p-3 bg-white rounded-lg border border-slate-200 shadow-sm animate-fade-in relative">
-                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2">Ảnh bạn vừa chọn:</p>
-                    <img id="local-img" src="" class="w-full h-44 object-cover rounded-md border-2 border-white shadow-inner">
-                    <span id="local-size" class="absolute top-1 right-1 text-[9px] bg-slate-900/50 text-white px-2 py-0.5 rounded"></span>
+                <div id="local-preview-box" class="hidden mt-1 p-2 bg-white rounded-lg border border-slate-200 shadow-sm relative z-20 animate-pulse">
+                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2 text-left px-2">Ảnh đã chọn:</p>
+                    <img id="local-img" src="" class="w-full h-40 object-cover rounded-md border shadow-inner">
+                    <span id="local-size" class="absolute top-2 right-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded"></span>
                 </div>
             </div>
 
-            <button id="btnStart" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 active:scale-95">
-                <i class="fa-solid fa-rocket"></i> BẮT ĐẦU KIỂM TRA
+            <button id="btnStart" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95">
+                <i class="fa-solid fa-rocket"></i> BẮT ĐẦU TẢI LÊN
             </button>
 
-            <div id="statusBox" class="hidden p-4 rounded-xl text-sm font-semibold border text-center animate-pulse"></div>
+            <div id="statusBox" class="hidden p-4 rounded-xl text-sm font-semibold border text-center"></div>
             
-            <div id="resultBox" class="hidden space-y-3 animate-fade-in">
-                <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg border border-slate-700">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Kết quả từ Drive & Firebase</p>
-                    <a id="linkDrive" href="#" target="_blank" class="text-blue-400 underline break-all text-xs block mb-3 hover:text-blue-300"></a>
-                    <div class="relative group">
-                        <img id="imgPreview" src="" class="w-full h-48 object-cover rounded-lg border border-slate-700">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg cursor-pointer">
-                            <span class="text-white text-xs">Bấm để xem ảnh gốc trên Drive</span>
-                        </div>
-                    </div>
+            <div id="resultBox" class="hidden space-y-3">
+                <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg border border-slate-700 text-center">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Đã lưu thành công lên Drive</p>
+                    <a id="linkDrive" href="#" target="_blank" class="text-blue-400 underline break-all text-xs block mb-3"></a>
+                    <img id="imgPreview" src="" class="w-full h-44 object-cover rounded-lg border border-slate-700 mx-auto">
                 </div>
             </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-slate-100 text-[10px] text-center text-slate-400">
-            Dữ liệu sẽ được lưu tại: <b>TestUpload/LastImage</b> trên Firebase
+        <div class="mt-6 pt-4 border-t border-slate-100 text-[10px] text-center text-slate-400 uppercase tracking-widest">
+            VDC Safety Training System
         </div>
     </div>
 
     <script type="module">
-        // Import cấu hình chuẩn
         import { db, ref, set } from '../js/firebase-config.js';
 
-        // LINK WEB APP CỦA BẠN (Cập nhật ngày 28/03/2026)
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
+        // URL Web App của bạn (Bản v5.8 đã fix CORS)
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxYQW1o_VKQAhaJPJsUzXxR0AJD7Y7gR5tlMrcFKDGcgOGldUee66HtiwO37r2cuma3/exec";
 
         const fileInput = document.getElementById('testFile');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -80,74 +70,75 @@
         const statusBox = document.getElementById('statusBox');
         const resultBox = document.getElementById('resultBox');
 
-        // BẮT SỰ KIỆN CHỌN FILE ĐỂ XEM TRƯỚC
-        fileInput.onchange = () => {
-            const file = fileInput.files[0];
+        // SỬ KIỆN CHỌN FILE
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
             if(file) {
-                // 1. Hiển thị tên và kích thước
-                fileNameDisplay.innerText = file.name;
-                fileNameDisplay.classList.add('text-blue-600');
-                localSize.innerText = `${(file.size / 1024).toFixed(1)} KB`;
-
-                // 2. Nạp ảnh cục bộ bằng URL.createObjectURL (Rất nhanh)
+                // Hiển thị Preview ngay lập tức
                 uploadContent.classList.add('hidden');
                 localPreviewBox.classList.remove('hidden');
                 localImg.src = URL.createObjectURL(file);
+                localSize.innerText = (file.size / 1024).toFixed(1) + " KB";
+                fileNameDisplay.innerText = file.name;
+                
+                // Reset kết quả cũ nếu có
+                resultBox.classList.add('hidden');
+                statusBox.classList.add('hidden');
             }
         };
 
-        // Bắt sự kiện tải lên
+        // SỰ KIỆN TẢI LÊN
         async function runTest() {
             const file = fileInput.files[0];
-            if (!file) return alert("Vui lòng chọn 1 tấm ảnh!");
+            if (!file) return alert("Bạn chưa chọn ảnh!");
 
-            // Trạng thái khởi động
-            statusBox.className = "p-4 rounded-xl text-sm font-semibold border bg-blue-50 border-blue-200 text-blue-700 block text-center";
-            statusBox.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Đang tải lên Drive...`;
-            resultBox.classList.add('hidden');
+            statusBox.className = "p-4 rounded-xl text-sm font-bold border bg-blue-50 border-blue-200 text-blue-700 block text-center animate-pulse";
+            statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ĐANG TẢI LÊN CLOUD...`;
 
             const reader = new FileReader();
-
-            reader.onload = async function(e) {
-                const base64 = e.target.result.split(',')[1];
+            reader.onload = async function(event) {
+                const base64 = event.target.result.split(',')[1];
                 
                 try {
-                    // Bước 1: Gửi lên Google Drive
+                    // 1. Gửi lên Drive qua GAS
                     const res = await fetch(GAS_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ type: "upload", mst: "LAB_MST", tenCty: "VDC LAB", cccd: "TEST_999", base64: base64 })
+                        body: JSON.stringify({
+                            type: "upload",
+                            mst: "VDC_TEST",
+                            tenCty: "VDC LAB",
+                            cccd: "999999",
+                            base64: base64
+                        })
                     });
-                    
+
                     const resJson = await res.json();
                     
                     if (resJson.status === "success") {
                         const driveLink = resJson.fileUrl;
                         
-                        // Bước 2: Lưu vào Firebase
-                        statusBox.innerHTML = `<i class="fa-solid fa-database mr-2"></i> Đang ghi vào Firebase...`;
-                        
+                        // 2. Ghi Firebase
                         await set(ref(db, 'TestUpload/LastImage'), {
                             url: driveLink,
-                            time: new Date().toLocaleString('vi-VN'),
-                            status: "PREVIEW FIXED"
+                            time: new Date().toISOString()
                         });
 
-                        // Bước 3: Hiển thị kết quả thành công
-                        statusBox.classList.remove('animate-pulse');
-                        statusBox.className = "p-4 rounded-xl text-sm font-semibold border bg-emerald-100 border-emerald-200 text-emerald-700 block text-center";
-                        statusBox.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> KẾT NỐI THÔNG SUỐT!`;
+                        // 3. Kết quả
+                        statusBox.className = "p-4 rounded-xl text-sm font-bold border bg-emerald-100 border-emerald-200 text-emerald-700 block text-center";
+                        statusBox.innerHTML = `✅ THÀNH CÔNG RỰC RỠ!`;
                         
                         resultBox.classList.remove('hidden');
                         document.getElementById('linkDrive').href = driveLink;
                         document.getElementById('linkDrive').innerText = driveLink;
                         document.getElementById('imgPreview').src = driveLink;
+                        localPreviewBox.classList.remove('animate-pulse');
 
                     } else {
                         throw new Error(resJson.message);
                     }
                 } catch (error) {
-                    statusBox.className = "p-4 rounded-xl text-sm font-semibold border bg-red-100 border-red-200 text-red-700 block text-center";
-                    statusBox.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-2"></i> Lỗi: ${error.message}`;
+                    statusBox.className = "p-4 rounded-xl text-sm font-bold border bg-red-100 border-red-200 text-red-700 block text-center";
+                    statusBox.innerHTML = `❌ LỖI: ${error.message}`;
                 }
             };
             reader.readAsDataURL(file);
