@@ -2,9 +2,10 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC CRM - Dual Sync v7.5</title>
+    <title>VDC CRM - Power Sync v7.6</title>
     <script src="../js/exceljs.min.js"></script>
-    <script src="../js/jszip.min.js"></script> <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../js/jszip.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .sidebar-gradient { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
@@ -15,11 +16,10 @@
         .table-scroll { flex: 1; overflow-y: auto; padding: 0 24px 24px 24px; }
         table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
         th { position: sticky; top: 0; background: white; z-index: 20; padding: 20px 15px; text-transform: uppercase; font-size: 11px; font-weight: 900; color: #94a3b8; border-bottom: 1px solid #f1f5f9; text-align: left; }
-        .row-card td { padding: 15px; background: white; border-top: 1px solid #f8fafc; border-bottom: 1px solid #f8fafc; }
+        .row-card td { padding: 12px 15px; background: white; border-top: 1px solid #f8fafc; border-bottom: 1px solid #f8fafc; font-size: 12px; }
         .row-card td:first-child { border-left: 1px solid #f8fafc; border-radius: 15px 0 0 15px; text-align: center; }
         .row-card td:last-child { border-right: 1px solid #f8fafc; border-radius: 0 15px 15px 0; text-align: right; }
-        .avatar-frame { width: 45px; height: 60px; border-radius: 8px; object-fit: cover; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 2px solid white; }
-        .mode-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .avatar-frame { width: 40px; height: 55px; border-radius: 6px; object-fit: cover; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 2px solid white; }
     </style>
 </head>
 <body class="bg-[#fcfdfe] font-sans text-slate-800">
@@ -28,47 +28,54 @@
         <div class="w-96 sidebar-gradient border-r border-slate-200 p-8 flex flex-col shadow-2xl z-20 overflow-y-auto">
             <div class="mb-8">
                 <h1 class="text-2xl font-black tracking-tighter text-slate-800">VDC<span class="text-blue-600">.CRM</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Dual Mode Sync v7.5</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Special Fix v7.6</p>
             </div>
 
-            <div class="space-y-6 flex-1">
-                <div class="flex p-1 bg-slate-100 rounded-xl">
-                    <button id="mode1" class="mode-btn active flex-1 text-[10px] font-black py-2 rounded-lg border transition-all">LOẠI 1 (ẢNH TRONG EXCEL)</button>
-                    <button id="mode2" class="mode-btn flex-1 text-[10px] font-black py-2 rounded-lg border border-transparent transition-all">LOẠI 2 (KÈM FILE ZIP)</button>
+            <div class="space-y-5 flex-1">
+                <div class="space-y-2">
+                    <label class="text-[11px] font-black text-slate-500 uppercase px-1">Loại file & Ảnh</label>
+                    <select id="templateType" class="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        <option value="excel_img">1. Mẫu TTHV (Ảnh trong Excel)</option>
+                        <option value="zip_img">2. Mẫu Long Phương (Ảnh trong ZIP)</option>
+                    </select>
                 </div>
 
                 <div class="space-y-3">
                     <div class="file-drop-area group">
                         <i class="fa-solid fa-file-excel text-3xl text-slate-300 group-hover:text-blue-500 mb-2"></i>
-                        <p id="labelExcel" class="text-xs font-bold text-slate-600 text-center uppercase tracking-tighter">Chọn File Excel</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase">File Excel (.xlsx)</p>
                         <input type="file" id="fileExcel" accept=".xlsx">
                     </div>
-                    
-                    <div id="zipArea" class="hidden file-drop-area group border-emerald-200 bg-emerald-50/20">
+                    <div id="zipGroup" class="hidden file-drop-area group border-emerald-100 bg-emerald-50/20">
                         <i class="fa-solid fa-file-zipper text-3xl text-emerald-300 group-hover:text-emerald-500 mb-2"></i>
-                        <p class="text-xs font-bold text-emerald-600 uppercase tracking-tighter">Chọn File Ảnh (.zip)</p>
+                        <p class="text-[10px] font-black text-emerald-400 uppercase">File Ảnh (.zip)</p>
                         <input type="file" id="fileZip" accept=".zip">
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                    <input type="text" id="inputMST" placeholder="Mã số thuế" class="w-full text-xs font-black border-none focus:ring-0 p-0 mb-2">
-                    <input type="text" id="inputTenCty" placeholder="Tên đơn vị công ty" class="w-full text-xs font-bold text-blue-600 border-t border-slate-50 pt-2 focus:ring-0 border-none p-0 italic">
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Mã số thuế</label>
+                        <input type="text" id="inputMST" class="w-full text-xs font-black focus:ring-0 border-none p-0" placeholder="Chờ trích xuất...">
+                    </div>
+                    <div class="border-t border-slate-50 pt-2">
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Tên công ty</label>
+                        <input type="text" id="inputTenCty" class="w-full text-xs font-bold text-blue-600 focus:ring-0 border-none p-0 italic" placeholder="Chờ trích xuất...">
+                    </div>
                 </div>
 
-                <button id="btnPreview" class="w-full bg-slate-800 hover:bg-black text-white font-black py-4 rounded-2xl shadow-xl transition-all text-xs">TRÍCH XUẤT HỌC VIÊN</button>
+                <button id="btnPreview" class="w-full bg-slate-800 hover:bg-black text-white font-black py-4 rounded-2xl shadow-xl transition-all text-xs uppercase tracking-widest">🔍 Trích xuất dữ liệu</button>
 
                 <div id="syncSection" class="hidden space-y-4 pt-4 border-t border-slate-100 animate-fade-in">
                     <button id="btnSync" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3">
                         <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i> ĐỒNG BỘ CLOUD VDC
                     </button>
-                    
-                    <div id="statusUI" class="space-y-2">
+                    <div class="space-y-2">
                         <div class="flex justify-between text-[10px] font-black text-slate-400 uppercase">
                             <span id="statusText">Sẵn sàng...</span>
                             <span id="percentText">0%</span>
                         </div>
-                        <div class="bg-slate-200 h-1 rounded-full overflow-hidden">
+                        <div class="bg-slate-200 h-1.5 rounded-full overflow-hidden">
                             <div id="progressFill" class="h-full bg-blue-600 transition-all w-0"></div>
                         </div>
                     </div>
@@ -76,11 +83,11 @@
             </div>
         </div>
 
-        <div class="flex-1 p-8 flex flex-col">
+        <div class="flex-1 p-8 flex flex-col bg-[#fcfdfe]">
             <div class="flex justify-between items-end mb-6 px-4">
                 <div>
-                    <h3 class="text-xl font-black text-slate-800 tracking-tight">VDC DATA PROCESSOR</h3>
-                    <p id="modeInfo" class="text-xs text-blue-500 font-bold uppercase tracking-widest mt-1 italic">Chế độ: Ảnh tích hợp Excel</p>
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight uppercase">Bảng điều khiển trích xuất</h3>
+                    <p class="text-xs text-slate-400 font-medium italic">Hệ thống xử lý ô gộp & Rich Text chuẩn VDC</p>
                 </div>
                 <div id="countAll" class="bg-white px-5 py-2 rounded-xl shadow-sm border border-slate-100 font-black text-blue-600 text-sm">0 học viên</div>
             </div>
@@ -93,9 +100,11 @@
                                 <th class="w-16">STT</th>
                                 <th class="w-24">Ảnh</th>
                                 <th>Họ và Tên</th>
-                                <th>CCCD / Định danh</th>
-                                <th>Nhóm/Đơn vị</th>
-                                <th>Trạng thái Sync</th>
+                                <th>Ngày sinh</th>
+                                <th>CCCD</th>
+                                <th>Chức vụ</th>
+                                <th>Đơn vị</th>
+                                <th class="text-right">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -105,125 +114,145 @@
         </div>
     </div>
 
-    <script type="module">
-        import { db, ref, set } from '../js/firebase-config.js';
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxKY8mO5USmDe3DyiYPNLpt0x64l8YN_Z_4TgoEdUs1F0Nw_pnjZd1XU6V2lL_Wl_lS/exec";
-        let hocVienList = [];
-        let currentMode = 1;
+<script type="module">
+    import { db, ref, set } from '../js/firebase-config.js';
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxKY8mO5USmDe3DyiYPNLpt0x64l8YN_Z_4TgoEdUs1F0Nw_pnjZd1XU6V2lL_Wl_lS/exec";
 
-        // Switch Mode
-        document.getElementById('mode1').onclick = () => {
-            currentMode = 1;
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('mode1').classList.add('active');
-            document.getElementById('zipArea').classList.add('hidden');
-            document.getElementById('modeInfo').innerText = "Chế độ: Ảnh tích hợp Excel";
-        };
-        document.getElementById('mode2').onclick = () => {
-            currentMode = 2;
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('mode2').classList.add('active');
-            document.getElementById('zipArea').classList.remove('hidden');
-            document.getElementById('modeInfo').innerText = "Chế độ: Ảnh kèm file ZIP";
-        };
+    let globalDataHocVien = [];
 
-        document.getElementById('btnPreview').onclick = async () => {
-            const fileEx = document.getElementById('fileExcel').files[0];
-            if (!fileEx) return alert("Thiếu File Excel!");
+    // Logic lấy giá trị an toàn từ code v6.2 của bạn
+    const getSafeVal = (sheet, addr) => {
+        const cell = sheet.getCell(addr);
+        const target = cell.isMerged && cell.master ? cell.master : cell;
+        let val = target.value;
+        if (!val) return "";
+        if (typeof val === 'object') {
+            if (val.richText) return val.richText.map(t => t.text).join('').trim();
+            if (val.result !== undefined) return (val.result || "").toString().trim();
+            return "";
+        }
+        return val.toString().trim();
+    };
 
+    const superClean = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "") : "";
+
+    document.getElementById('templateType').onchange = (e) => {
+        document.getElementById('zipGroup').classList.toggle('hidden', e.target.value !== 'zip_img');
+    };
+
+    document.getElementById('btnPreview').onclick = async () => {
+        const type = document.getElementById('templateType').value;
+        const fileEx = document.getElementById('fileExcel').files[0];
+        const fileZi = document.getElementById('fileZip').files[0];
+        if (!fileEx) return alert("Vui lòng chọn file Excel!");
+        
+        try {
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT DỮ LIỆU...";
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await fileEx.arrayBuffer());
-            const sheet = workbook.getWorksheet(1);
+            const sheet = workbook.worksheets[0];
+            let data = [];
 
-            document.getElementById('inputTenCty').value = sheet.getCell('A3').text.replace(/Công ty[:\s]*/gi, "");
-            document.getElementById('inputMST').value = sheet.getCell('A4').text.match(/[0-9]+/)?.[0] || "";
+            // Logic bóc ảnh Excel v6.2
+            const anhExcel = {};
+            sheet.getImages().forEach(img => {
+                const row = img.range.tl.nativeRow;
+                if (img.range.tl.nativeCol >= 7) anhExcel[row] = workbook.getImage(img.imageId).buffer;
+            });
 
-            let imageMap = {};
-            if (currentMode === 1) {
-                // LOẠI 1: LẤY ẢNH TỪ EXCEL
-                sheet.getImages().forEach(img => {
-                    const row = img.range.tl.nativeRow + 1;
-                    imageMap[row] = workbook.getImage(img.imageId).buffer;
-                });
+            // Lấy MST/Tên Cty chuẩn v6.2
+            if (type === 'excel_img') {
+                document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "").trim();
+                document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "").trim();
             } else {
-                // LOẠI 2: LẤY ẢNH TỪ ZIP THEO CCCD
-                const fileZ = document.getElementById('fileZip').files[0];
-                if (!fileZ) return alert("Vui lòng chọn thêm file ZIP ảnh!");
-                const zip = await JSZip.loadAsync(fileZ);
-                for (let filename in zip.files) {
-                    if (filename.match(/\.(jpg|jpeg|png)$/i)) {
-                        const cccd = filename.split('.')[0].replace(/[^0-9]/g, '');
-                        imageMap[cccd] = await zip.files[filename].async("uint8array");
+                const info = getSafeVal(sheet, 'A8');
+                document.getElementById('inputTenCty').value = info.split('\n')[0];
+                const mst = info.match(/[0-9]{10,}/);
+                if (mst) document.getElementById('inputMST').value = mst[0];
+            }
+
+            // Logic bóc ZIP v6.2
+            let anhTuZip = {};
+            if (type === 'zip_img' && fileZi) {
+                const zipData = await JSZip.loadAsync(fileZi);
+                for (let f in zipData.files) {
+                    if (f.match(/\.(jpg|jpeg|png)$/i)) {
+                        const rawName = f.split('/').pop().split('.').shift();
+                        anhTuZip[superClean(rawName)] = await zipData.files[f].async("arraybuffer");
                     }
                 }
             }
 
-            hocVienList = [];
-            sheet.eachRow((row, rowNum) => {
-                const stt = row.getCell(1).text;
-                if (rowNum >= 10 && stt && !isNaN(stt)) {
-                    const cccd = row.getCell(7).text.trim();
-                    hocVienList.push({
-                        stt: stt, hoten: row.getCell(2).text, cccd: cccd,
-                        donvi: row.getCell(5).text || "VDC",
-                        photo: (currentMode === 1) ? imageMap[rowNum] : imageMap[cccd]
-                    });
+            sheet.eachRow((row, i) => {
+                const sttVal = row.getCell(1).text.trim();
+                if (i >= 10 && sttVal && !isNaN(sttVal)) {
+                    const hoten = (type === 'excel_img') ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
+                    const item = {
+                        stt: data.length + 1,
+                        hoten: hoten,
+                        gioitinh: (type === 'excel_img') ? getSafeVal(sheet, `C${i}`) : getSafeVal(sheet, `G${i}`),
+                        ngaysinh: (type === 'excel_img') ? row.getCell(4).text : row.getCell(6).text,
+                        cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
+                        congviec: (type === 'excel_img') ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
+                        donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
+                        photo: anhExcel[i-1] || anhTuZip[superClean(hoten)] || null
+                    };
+                    data.push(item);
                 }
             });
 
-            renderTable();
-            document.getElementById('syncSection').classList.remove('hidden');
-            document.getElementById('countAll').innerText = hocVienList.length + " học viên";
-        };
-
-        function renderTable() {
+            globalDataHocVien = data;
             const tbody = document.querySelector("#hocVienTable tbody");
-            tbody.innerHTML = hocVienList.map(h => `
-                <tr class="row-card">
-                    <td>${h.stt}</td>
-                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="avatar-frame">` : '❌'}</td>
-                    <td class="font-bold text-slate-700">${h.hoten}</td>
-                    <td class="font-mono text-slate-500">${h.cccd}</td>
-                    <td class="text-slate-400 font-bold text-[10px] uppercase">${h.donvi}</td>
-                    <td id="status-${h.cccd}" class="text-[10px] font-black text-blue-300 italic uppercase">Chờ đẩy...</td>
+            tbody.innerHTML = data.map(s => `
+                <tr class="row-card animate-fade-in">
+                    <td>${s.stt}</td>
+                    <td>${s.photo ? `<img src="${URL.createObjectURL(new Blob([s.photo]))}" class="avatar-frame">` : '❌'}</td>
+                    <td class="font-bold text-slate-700">${s.hoten}</td>
+                    <td>${s.ngaysinh}</td>
+                    <td class="font-mono text-slate-500">${s.cccd}</td>
+                    <td class="text-[11px] font-medium">${s.congviec}</td>
+                    <td class="text-[10px] font-black text-slate-400 uppercase">${s.donvi}</td>
+                    <td id="status-${s.cccd}" class="text-blue-300 italic text-[10px]">Chờ Cloud...</td>
                 </tr>
             `).join('');
-        }
+            
+            document.getElementById('syncSection').classList.remove('hidden');
+            document.getElementById('countAll').innerText = data.length + " học viên";
+            document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
+        } catch (e) { alert("Lỗi: " + e.message); document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT DỮ LIỆU"; }
+    };
 
-        document.getElementById('btnSync').onclick = async () => {
-            const mst = document.getElementById('inputMST').value;
-            const tenCty = document.getElementById('inputTenCty').value;
-            document.getElementById('btnSync').disabled = true;
+    document.getElementById('btnSync').onclick = async () => {
+        const mst = document.getElementById('inputMST').value.trim();
+        const ten = document.getElementById('inputTenCty').value.trim();
+        if(!mst) return alert("Vui lòng nhập MST!");
 
-            for (let i = 0; i < hocVienList.length; i++) {
-                const hv = hocVienList[i];
-                const pct = Math.round(((i + 1) / hocVienList.length) * 100);
-                document.getElementById('progressFill').style.width = pct + "%";
-                document.getElementById('percentText').innerText = pct + "%";
-                document.getElementById('statusText').innerText = `Sync: ${hv.hoten}`;
+        document.getElementById('btnSync').disabled = true;
+        for (let i = 0; i < globalDataHocVien.length; i++) {
+            const s = globalDataHocVien[i];
+            const pct = Math.round(((i + 1) / globalDataHocVien.length) * 100);
+            document.getElementById('progressFill').style.width = pct + "%";
+            document.getElementById('percentText').innerText = pct + "%";
+            document.getElementById('statusText').innerText = `Sync: ${s.hoten}`;
 
-                let driveUrl = "";
-                if (hv.photo) {
-                    const base64 = btoa(new Uint8Array(hv.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
-                    try {
-                        const res = await fetch(GAS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({ type: "upload", mst: mst, tenCty: tenCty, cccd: hv.cccd, base64: base64 })
-                        });
-                        const resJson = await res.json();
-                        if (resJson.status === "success") {
-                            driveUrl = resJson.fileUrl;
-                            document.getElementById(`status-${hv.cccd}`).innerHTML = `<span class="text-emerald-500 font-black text-[9px]">✅ DRIVE OK</span>`;
-                        }
-                    } catch (e) { console.error(e); }
-                }
-
-                await set(ref(db, `HocVien/${mst}/${hv.cccd}`), {
-                    ...hv, PhotoUrl: driveUrl, photo: null, NgaySync: new Date().toLocaleString('vi-VN')
-                });
+            let driveUrl = "";
+            if (s.photo) {
+                const base64 = btoa(new Uint8Array(s.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
+                try {
+                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) });
+                    const resJson = await res.json();
+                    if (resJson.status === "success") {
+                        driveUrl = resJson.fileUrl;
+                        document.getElementById(`status-${s.cccd}`).innerHTML = `<span class="text-emerald-500 font-black uppercase text-[9px]">✅ Drive OK</span>`;
+                    }
+                } catch(e) {}
             }
-            alert("Đã đồng bộ thành công!");
-        };
-    </script>
+            // Lưu Firebase (Lược bỏ Buffer ảnh để nhẹ DB)
+            const { photo, ...dataSave } = s;
+            await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...dataSave, PhotoUrl: driveUrl, NgayCapNhat: new Date().toLocaleString('vi-VN') });
+        }
+        document.getElementById('statusText').innerText = "ĐỒNG BỘ HOÀN TẤT!";
+    };
+</script>
 </body>
 </html>
