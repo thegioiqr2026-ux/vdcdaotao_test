@@ -2,7 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ thống VDC CRM v5.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống VDC CRM v5.2</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,36 +12,44 @@
         #layout-sidebar.expanded, #layout-sidebar:hover { width: 260px; }
         .menu-text { display: none; white-space: nowrap; margin-left: 12px; }
         #layout-sidebar.expanded .menu-text, #layout-sidebar:hover .menu-text { display: inline; }
+        .menu-item:hover { background-color: rgba(51, 65, 85, 1); }
     </style>
 </head>
 <body class="bg-gray-100 flex h-screen overflow-hidden">
 
     <aside id="layout-sidebar" class="bg-slate-900 text-white h-full flex-shrink-0 flex flex-col transition-all duration-300">
-        <div class="p-4 flex items-center border-b border-slate-800 h-16">
+        <div class="p-4 flex items-center border-b border-slate-800 h-16 flex-shrink-0">
             <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold flex-shrink-0">V</div>
             <span class="menu-text font-bold text-lg text-white">VDC CRM</span>
         </div>
         
-        <ul class="flex-1 px-2 py-4 space-y-2">
-            <li class="flex items-center p-3 hover:bg-slate-800 rounded-lg cursor-pointer group" onclick="loadView('views/kanban.html')">
-                <i class="fa-solid fa-layer-group w-8 text-center text-xl text-blue-400"></i>
-                <span class="menu-text">Bảng điều khiển</span>
-            </li>
-            <li class="flex items-center p-3 hover:bg-slate-800 rounded-lg cursor-pointer group" onclick="loadView('views/loadExcel.html')">
-                <i class="fa-solid fa-users-gear w-8 text-center text-xl text-emerald-400"></i>
-                <span class="menu-text">Thông tin học viên</span>
-            </li>
-            <li class="flex items-center p-3 hover:bg-slate-800 rounded-lg cursor-pointer group" onclick="loadView('printdoc.html')">
-                <i class="fa-solid fa-id-card w-8 text-center text-xl text-amber-400"></i>
-                <span class="menu-text">In thẻ</span>
-            </li>
-        </ul>
+        <nav class="flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+            <div class="menu-item flex items-center p-4 cursor-pointer transition-colors group" onclick="loadView('views/kanban.html')">
+                <i class="fa-solid fa-chart-line w-8 text-center text-xl text-blue-400 group-hover:scale-110 transition-transform"></i>
+                <span class="menu-text font-medium text-slate-300">Bảng điều khiển</span>
+            </div>
+
+            <div class="menu-item flex items-center p-4 cursor-pointer transition-colors group" onclick="loadView('views/loadExcel.html')">
+                <i class="fa-solid fa-address-book w-8 text-center text-xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                <span class="menu-text font-medium text-slate-300">Thông tin học viên</span>
+            </div>
+
+            <div class="menu-item flex items-center p-4 cursor-pointer transition-colors group" onclick="loadView('printdoc.html')">
+                <i class="fa-solid fa-print w-8 text-center text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                <span class="menu-text font-medium text-slate-300">In thẻ</span>
+            </div>
+
+            <div class="menu-item flex items-center p-4 cursor-pointer transition-colors group" onclick="loadView('views/admin-trainers.html')">
+                <i class="fa-solid fa-user-graduate w-8 text-center text-xl text-purple-400 group-hover:scale-110 transition-transform"></i>
+                <span class="menu-text font-medium text-slate-300">Giảng viên</span>
+            </div>
+        </nav>
 
         <div class="p-4 border-t border-slate-800">
-            <button class="flex items-center w-full p-2 hover:bg-red-900/30 text-red-400 rounded-lg" onclick="window.location.href='login.html'">
-                <i class="fa-solid fa-right-from-bracket w-8 text-center text-xl"></i>
-                <span class="menu-text">Đăng xuất</span>
-            </button>
+            <div class="menu-item flex items-center p-3 cursor-pointer text-red-400 hover:text-red-300 transition-colors" onclick="window.location.href='login.html'">
+                <i class="fa-solid fa-power-off w-8 text-center text-xl"></i>
+                <span class="menu-text font-medium">Đăng xuất</span>
+            </div>
         </div>
     </aside>
 
