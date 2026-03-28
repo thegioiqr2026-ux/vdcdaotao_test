@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Thông tin học viên v4.8</title>
+    <title>VDC Thông tin học viên v5.3</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
@@ -15,14 +15,15 @@
         input, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box; }
         .table-container { flex: 1; border: 1px solid #e2e8f0; border-radius: 4px; overflow: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1600px; }
-        th { background: #f1f5f9; position: sticky; top: 0; padding: 10px; font-size: 11px; z-index: 10; border-bottom: 2px solid #e2e8f0; }
+        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; z-index: 10; }
         td { padding: 6px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
         .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; transition: 0.2s; }
         .btn-preview { background: #3b82f6; }
         .btn-sync { background: #10b981; display: none; }
         .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; margin-top: 10px; display: none; overflow: hidden; }
-        #progressFill { height: 100%; width: 0%; background: #10b981; }
-        .preview-img { width: 40px; height: 55px; object-fit: cover; }
+        #progressFill { height: 100%; width: 0%; background: #10b981; transition: width 0.2s; }
+        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
+        #status { margin-top: 8px; font-size: 11px; text-align: center; color: #3b82f6; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -30,15 +31,15 @@
 <div class="sidebar-in">
     <div class="form-group">
         <label>LOẠI FILE & ẢNH:</label>
-        <select id="templateType" onchange="toggleZipInput()">
+        <select id="templateType">
             <option value="excel_img">1. Mẫu TTHV (Ảnh trong Excel)</option>
-            <option value="zip_img">2. Mẫu Long Phương (Ảnh trong ZIP)</option>
+            <option value="zip_img" selected>2. Mẫu Long Phương (Ảnh trong ZIP)</option>
         </select>
     </div>
     
     <div class="form-group"><label>FILE EXCEL:</label><input type="file" id="fileExcel" accept=".xlsx"></div>
     
-    <div class="form-group" id="zipGroup" style="display:none;">
+    <div class="form-group" id="zipGroup">
         <label>FILE ZIP HÌNH ẢNH:</label>
         <input type="file" id="fileZip" accept=".zip">
     </div>
@@ -48,14 +49,14 @@
         <input type="text" id="inputTenCty" placeholder="Tên công ty...">
     </div>
 
-    <button class="btn btn-preview" id="btnPreview">🔍 XEM TRƯỚC DỮ LIỆU</button>
+    <button class="btn btn-preview" id="btnPreview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
     
     <div id="syncSection" style="display:none;">
         <button id="btnSync" class="btn btn-sync">🚀 ĐỒNG BỘ HỆ THỐNG</button>
         <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
-        <div id="status" style="font-size:11px; text-align:center; margin-top:5px; font-weight:bold; color:#3b82f6;"></div>
+        <div id="status"></div>
     </div>
-    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 10px;">v4.8 - Manual Controller</p>
+    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 15px;">v5.3 - Iframe Stable</p>
 </div>
 
 <div class="main-content">
@@ -76,26 +77,33 @@
     import { db, ref, set } from '../js/firebase-config.js';
     const GAS_URL = "DÁN_URL_GAS_CỦA_BẠN"; 
 
-    // Hiện/ẩn input ZIP tùy theo lựa chọn
-    window.toggleZipInput = function() {
-        const type = document.getElementById('templateType').value;
-        document.getElementById('zipGroup').style.display = (type === 'zip_img') ? 'block' : 'none';
-    }
+    let globalDataHocVien = [];
 
+    // Hàm Super Clean khớp ảnh chính xác
     function superClean(s) { return s ? s.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "").trim() : ""; }
 
+    // Gắn sự kiện thay đổi loại file (Fix lỗi không bấm được do Iframe)
+    document.getElementById('templateType').addEventListener('change', (e) => {
+        document.getElementById('zipGroup').style.display = (e.target.value === 'zip_img') ? 'block' : 'none';
+    });
+
+    // Gắn sự kiện nút Xem trước (Fix lỗi treo nút)
     document.getElementById('btnPreview').addEventListener('click', async () => {
         const type = document.getElementById('templateType').value;
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
+        const status = document.getElementById('status');
+
         if (!fileEx) return alert("Vui lòng chọn file Excel!");
 
+        status.innerText = "⏳ Đang trích xuất dữ liệu...";
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(await fileEx.arrayBuffer());
         const sheet = workbook.worksheets[0];
         let data = [];
         let anhTuZip = {};
 
+        // 1. Xử lý ảnh ZIP
         if (type === 'zip_img' && fileZi) {
             const zipData = await JSZip.loadAsync(fileZi);
             for (let f in zipData.files) {
@@ -105,8 +113,8 @@
             }
         }
 
+        // 2. Phân loại bóc tách
         if (type === 'zip_img') {
-            // QUY TẮC MẪU 2 (LONG PHƯƠNG)
             const valA8 = sheet.getCell('A8').text || "";
             document.getElementById('inputTenCty').value = valA8.split('\n')[0].trim();
             sheet.eachRow((row, i) => {
@@ -125,7 +133,6 @@
                 }
             });
         } else {
-            // QUY TẮC MẪU 1 (TTHV - ẢNH TRONG EXCEL)
             const valA3 = sheet.getCell('A3').text || "";
             document.getElementById('inputTenCty').value = valA3.replace(/Công ty[:\s]*/gi, "").trim();
             document.getElementById('inputMST').value = sheet.getCell('A4').text.replace(/Mã số thuế[:\s]*/gi, "").trim();
@@ -152,15 +159,17 @@
         }
 
         globalDataHocVien = data;
-        renderTable(data);
+        const tbody = document.querySelector("#previewTable tbody");
+        tbody.innerHTML = data.map(s => {
+            const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
+            return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
+        }).join('');
         document.getElementById('syncSection').style.display = 'block';
+        document.getElementById('btnSync').style.display = 'block';
+        status.innerText = `✅ Đã trích xuất ${data.length} nhân sự.`;
     });
 
-    function renderTable(data) {
-        const tbody = document.querySelector("#previewTable tbody");
-        tbody.innerHTML = data.map(s => `<tr><td>${s.stt}</td><td>${s.photo ? '✅' : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`).join('');
-    }
-
+    // Nút đồng bộ (Giám sát tiến độ v4.4)
     document.getElementById('btnSync').addEventListener('click', async () => {
         const mst = document.getElementById('inputMST').value.trim();
         const ten = document.getElementById('inputTenCty').value.trim();
@@ -187,7 +196,7 @@
             }
             await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...s, PhotoUrl: driveUrl, photo: null, NgayCapNhat: new Date().toISOString() });
         }
-        document.getElementById('status').innerText = "✅ ĐỒNG BỘ HOÀN TẤT v4.8";
+        document.getElementById('status').innerText = "✅ ĐỒNG BỘ HOÀN TẤT v5.3";
     });
 </script>
 </body>
