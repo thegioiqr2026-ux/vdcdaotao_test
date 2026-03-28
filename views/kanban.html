@@ -1,13 +1,13 @@
 <style>
     .kanban-wrapper { display: flex; flex-direction: column; height: 100%; background: #f8fafc; padding: 1.5rem; font-family: sans-serif; }
-    .kanban-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 1.25rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #e2e8f0; }
+    .kanban-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 1.25rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .kanban-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; flex: 1; min-width: 1200px; }
     .kanban-col { background: rgba(241, 245, 249, 0.8); border-radius: 24px; padding: 1rem; border: 2px solid #e2e8f0; display: flex; flex-direction: column; }
-    .col-title { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 1rem; display: flex; justify-content: space-between; }
-    .drop-zone { flex: 1; overflow-y: auto; min-height: 300px; padding-bottom: 50px; }
+    .col-title { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .drop-zone { flex: 1; overflow-y: auto; min-height: 400px; padding-bottom: 50px; }
     
-    /* STYLE THẺ CARD */
-    .kanban-card { background: white; border-radius: 16px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); cursor: grab; margin-bottom: 12px; }
+    .kanban-card { background: white; border-radius: 16px; padding: 15px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); cursor: grab; margin-bottom: 12px; transition: 0.2s; }
+    .kanban-card:hover { transform: translateY(-3px); border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     .card-mst { font-size: 11px; font-weight: 900; color: #2563eb; font-family: monospace; }
     .card-name { font-size: 12px; font-weight: 800; color: #1e293b; margin: 4px 0; text-transform: uppercase; }
     .card-desc { font-size: 10px; color: #64748b; line-height: 1.4; }
@@ -15,51 +15,132 @@
 
 <div class="kanban-wrapper">
     <div class="kanban-header">
-        <div class="flex items-center gap-4">
-            <div style="background:#2563eb; width:45px; height:45px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white;">
+        <div class="flex items-center gap-4 text-slate-800">
+            <div style="background:#2563eb; width:45px; height:45px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:20px;">
                 <i class="fa-solid fa-chalkboard-user"></i>
             </div>
             <div>
-                <h2 style="margin:0; font-size:18px; font-weight:900; text-transform:uppercase;">Điều phối huấn luyện</h2>
-                <p style="margin:0; font-size:10px; color:#94a3b8; font-weight:bold; letter-spacing:1px;">VDC CRM SYSTEM</p>
+                <h2 style="margin:0; font-size:18px; font-weight:900; text-transform:uppercase; letter-spacing:-0.5px;">Tiến độ huấn luyện</h2>
+                <p style="margin:0; font-size:10px; color:#94a3b8; font-weight:bold; letter-spacing:1px;">VDC CRM OPERATIONAL BOARD</p>
             </div>
         </div>
-        <button onclick="document.getElementById('modalCreate').style.display='flex'" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:900; cursor:pointer; font-size:11px;">+ LÊN ĐƠN MỚI</button>
+        <button onclick="document.getElementById('modalCreate').style.display='flex'" style="background:#0f172a; color:white; border:none; padding:12px 25px; border-radius:12px; font-weight:900; cursor:pointer; font-size:11px; letter-spacing:1px;">+ LÊN ĐƠN MỚI</button>
     </div>
 
     <div class="kanban-board">
         <div class="kanban-col">
-            <div class="col-title"><span>1. Báo Giá</span> <span id="count_B1">0</span></div>
+            <div class="col-title"><span>1. Báo Giá</span> <span id="count_B1_BaoGia" class="bg-white px-2 rounded">0</span></div>
             <div id="col_B1_BaoGia" ondrop="dropCard(event, 'B1_BaoGia')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
         <div class="kanban-col" style="background:#eff6ff;">
-            <div class="col-title"><span>2. Chuẩn Bị</span> <span id="count_B4">0</span></div>
+            <div class="col-title" style="color:#1d4ed8;"><span>2. Chuẩn Bị</span> <span id="count_B4_ChuanBi" class="bg-white px-2 rounded">0</span></div>
             <div id="col_B4_ChuanBi" ondrop="dropCard(event, 'B4_ChuanBi')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
         <div class="kanban-col" style="background:#fffbeb;">
-            <div class="col-title"><span>3. Đang Dạy</span> <span id="count_B5">0</span></div>
+            <div class="col-title" style="color:#b45309;"><span>3. Đang Dạy</span> <span id="count_B5_DangDay" class="bg-white px-2 rounded">0</span></div>
             <div id="col_B5_DangDay" ondrop="dropCard(event, 'B5_DangDay')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
         <div class="kanban-col" style="background:#f5f3ff;">
-            <div class="col-title"><span>4. In Phôi</span> <span id="count_B6">0</span></div>
+            <div class="col-title" style="color:#4338ca;"><span>4. In Phôi</span> <span id="count_B6_ChoInPhoi" class="bg-white px-2 rounded">0</span></div>
             <div id="col_B6_ChoInPhoi" ondrop="dropCard(event, 'B6_ChoInPhoi')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
         <div class="kanban-col" style="background:#f0fdf4;">
-            <div class="col-title"><span>5. Hoàn Tất</span> <span id="count_B7">0</span></div>
+            <div class="col-title" style="color:#047857;"><span>5. Hoàn Tất</span> <span id="count_B7_HoanTat" class="bg-white px-2 rounded">0</span></div>
             <div id="col_B7_HoanTat" ondrop="dropCard(event, 'B7_HoanTat')" ondragover="allowDrop(event)" class="drop-zone"></div>
         </div>
     </div>
 </div>
 
-<div id="modalCreate" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;">
-    <div style="background:white; width:400px; border-radius:20px; padding:25px;">
-        <h3 style="margin-top:0; text-transform:uppercase; font-size:14px; font-weight:900;">Lên đơn huấn luyện</h3>
-        <input type="text" id="newMST" placeholder="Mã số thuế..." style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; font-weight:bold;">
-        <input type="text" id="newTenCTY" placeholder="Tên công ty..." style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-        <textarea id="newNoiDung" placeholder="Nội dung huấn luyện..." rows="3" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;"></textarea>
-        <div style="display:flex; gap:10px;">
-            <button onclick="submitNewClass()" style="flex:1; background:#2563eb; color:white; border:none; padding:12px; border-radius:8px; font-weight:900; cursor:pointer;">TẠO ĐƠN</button>
-            <button onclick="document.getElementById('modalCreate').style.display='none'" style="background:#f1f5f9; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">HỦY</button>
+<div id="modalCreate" style="position:fixed; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:9999;">
+    <div style="background:white; width:400px; border-radius:24px; padding:30px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; text-transform:uppercase; font-size:14px; font-weight:900; color:#1e293b; border-bottom:2px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">Lên đơn huấn luyện mới</h3>
+        <input type="text" id="newMST" placeholder="Nhập Mã số thuế..." style="width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; font-weight:900; color:#2563eb; outline:none;">
+        <input type="text" id="newTenCTY" placeholder="Tên công ty..." style="width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; font-weight:700; outline:none;">
+        <textarea id="newNoiDung" placeholder="Nội dung huấn luyện / Nhóm..." rows="3" style="width:100%; padding:14px; margin-bottom:20px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; font-weight:600; outline:none; font-family:sans-serif;"></textarea>
+        <div style="display:flex; gap:12px;">
+            <button onclick="submitNewClass()" style="flex:1; background:#2563eb; color:white; border:none; padding:15px; border-radius:12px; font-weight:900; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">Khởi tạo đơn</button>
+            <button onclick="document.getElementById('modalCreate').style.display='none'" style="background:#f1f5f9; border:none; padding:15px; border-radius:12px; font-weight:900; cursor:pointer; color:#64748b;">HỦY</button>
         </div>
     </div>
 </div>
+
+<script type="module">
+    import { db, ref, set, push, onValue, update } from '../js/firebase-config.js';
+
+    // 1. HÀM TẠO ĐƠN MỚI (Lên đơn)
+    window.submitNewClass = async function() {
+        const mst = document.getElementById('newMST').value;
+        const ten = document.getElementById('newTenCTY').value;
+        const noi = document.getElementById('newNoiDung').value;
+
+        if(!mst || !ten) return alert("Vui lòng điền MST và Tên công ty!");
+
+        try {
+            const newOrderRef = push(ref(db, 'Classes')); // Lưu vào nhánh 'Classes'
+            await set(newOrderRef, {
+                mst: mst,
+                tenCty: ten,
+                noiDung: noi,
+                status: 'B1_BaoGia', // Mặc định cột 1
+                createdAt: new Date().toISOString()
+            });
+            
+            document.getElementById('modalCreate').style.display = 'none';
+            // Reset form
+            document.getElementById('newMST').value = "";
+            document.getElementById('newTenCTY').value = "";
+            document.getElementById('newNoiDung').value = "";
+        } catch (e) { alert("Lỗi lưu đơn: " + e.message); }
+    };
+
+    // 2. LẮNG NGHE DỮ LIỆU REALTIME
+    const classRef = ref(db, 'Classes');
+    onValue(classRef, (snapshot) => {
+        // Xóa sạch các cột để vẽ lại
+        document.querySelectorAll('.drop-zone').forEach(z => z.innerHTML = "");
+        const counts = { B1_BaoGia:0, B4_ChuanBi:0, B5_DangDay:0, B6_ChoInPhoi:0, B7_HoanTat:0 };
+
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            Object.keys(data).forEach(id => {
+                const item = data[id];
+                const status = item.status || 'B1_BaoGia';
+                const col = document.getElementById(`col_${status}`);
+                if (col) {
+                    counts[status]++;
+                    col.innerHTML += `
+                        <div class="kanban-card" draggable="true" ondragstart="window.dragCard(event, '${id}')" id="${id}">
+                            <div class="card-mst">${item.mst}</div>
+                            <div class="card-name">${item.tenCty}</div>
+                            <div class="card-desc">${item.noiDung || ''}</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+        // Cập nhật số lượng đầu cột
+        Object.keys(counts).forEach(key => {
+            const el = document.getElementById(`count_${key}`);
+            if(el) el.innerText = counts[key];
+        });
+    });
+
+    // 3. LOGIC KÉO THẢ (DRAG & DROP)
+    window.dragCard = function(ev, id) {
+        ev.dataTransfer.setData("text/plain", id);
+    };
+
+    window.allowDrop = function(ev) {
+        ev.preventDefault();
+    };
+
+    window.dropCard = async function(ev, newStatus) {
+        ev.preventDefault();
+        const id = ev.dataTransfer.getData("text/plain");
+        if (id) {
+            try {
+                await update(ref(db, `Classes/${id}`), { status: newStatus });
+            } catch (e) { console.error("Lỗi cập nhật trạng thái:", e); }
+        }
+    };
+</script>
