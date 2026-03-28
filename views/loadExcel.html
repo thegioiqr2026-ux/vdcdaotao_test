@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Thông tin học viên v5.9</title>
+    <title>VDC Thông tin học viên v6.0</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
@@ -17,15 +17,15 @@
         table { width: 100%; border-collapse: collapse; min-width: 1600px; }
         th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; z-index: 10; }
         td { padding: 6px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; transition: 0.2s; }
         .btn-preview { background: #2563eb; }
         .btn-sync { background: #10b981; display: none; }
         .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; margin-top: 10px; display: none; overflow: hidden; }
         #progressFill { height: 100%; width: 0%; background: #10b981; transition: width 0.3s; }
-        #live-preview-container { margin-top: 15px; text-align: center; display: none; border: 2px dashed #10b981; padding: 10px; border-radius: 8px; background: #f0fdf4; }
-        #live-img { width: 90px; height: 120px; object-fit: cover; border-radius: 4px; }
-        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
         #status { margin-top: 8px; font-size: 12px; text-align: center; color: #3b82f6; font-weight: 600; }
+        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
+        #live-preview-container { margin-top: 15px; text-align: center; display: none; border: 2px dashed #10b981; padding: 10px; border-radius: 8px; background: #f0fdf4; }
+        #live-img { width: 90px; height: 120px; object-fit: cover; border-radius: 4px; border: 2px solid #fff; }
     </style>
 </head>
 <body>
@@ -43,8 +43,10 @@
     <div class="form-group" id="zipGroup"><label>FILE ZIP HÌNH ẢNH:</label><input type="file" id="fileZip" accept=".zip"></div>
 
     <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-        <input type="text" id="inputMST" placeholder="Mã số thuế...">
-        <input type="text" id="inputTenCty" placeholder="Tên công ty..." style="margin-top: 8px;">
+        <label>MÃ SỐ THUẾ:</label>
+        <input type="text" id="inputMST" placeholder="Nhập hoặc lấy tự động...">
+        <label style="margin-top:8px;">TÊN CÔNG TY:</label>
+        <input type="text" id="inputTenCty" placeholder="Tên công ty tự động...">
     </div>
 
     <button class="btn btn-preview" id="btnPreview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
@@ -55,7 +57,7 @@
         <div id="live-preview-container"><img id="live-img" src=""><p id="live-name" style="font-size:11px; font-weight:bold; color:#15803d; margin-top:5px;"></p></div>
         <div id="status"></div>
     </div>
-    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 20px;">v5.9 - Fix Library Null Error</p>
+    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 20px;">v6.0 - Merge Cell Fixed</p>
 </div>
 
 <div class="main-content">
@@ -77,20 +79,18 @@
 
     let globalDataHocVien = [];
 
-    // Hàm lấy giá trị an toàn từ ô Excel
-    const getSafe = (cell) => {
-        if (!cell || cell.value === null || cell.value === undefined) return "";
-        // Nếu là ô chứa công thức (Result của công thức bị rỗng cũng gây lỗi toString)
-        if (typeof cell.value === 'object' && cell.value.result !== undefined) {
-            return cell.value.result ? cell.value.result.toString().trim() : "";
-        }
-        return cell.value.toString().trim();
+    // HÀM LẤY GIÁ TRỊ THÔNG MINH (Xử lý ô gộp và công thức)
+    const getVal = (sheet, addr) => {
+        const cell = sheet.getCell(addr);
+        // Nếu ô bị gộp (Master Cell sẽ chứa giá trị)
+        const target = cell.isMerged && cell.master ? cell.master : cell;
+        const val = target.value;
+        if (val === null || val === undefined) return "";
+        if (typeof val === 'object' && val.result !== undefined) return val.result.toString().trim();
+        return val.toString().trim();
     };
 
-    const superClean = (val) => {
-        const s = getSafe({ value: val });
-        return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "");
-    };
+    const superClean = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "");
 
     document.getElementById('templateType').onchange = (e) => {
         document.getElementById('zipGroup').style.display = (e.target.value === 'zip_img') ? 'block' : 'none';
@@ -103,13 +103,26 @@
         if (!fileEx) return alert("Chọn file Excel!");
         
         try {
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG XỬ LÝ...";
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG ĐỌC Ô GỘP...";
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await fileEx.arrayBuffer());
             const sheet = workbook.worksheets[0];
             let data = [];
             let anhTuZip = {};
 
+            // 1. Lấy MST và Tên Công ty theo Mẫu
+            if (type === 'zip_img') {
+                const infoText = getVal(sheet, 'A8'); // Ô gộp tên cty mẫu Long Phương
+                document.getElementById('inputTenCty').value = infoText.split('\n')[0];
+                // Thử tìm MST trong chuỗi A8 nếu có
+                const mstMatch = infoText.match(/[0-9]{10,}/);
+                if (mstMatch) document.getElementById('inputMST').value = mstMatch[0];
+            } else {
+                document.getElementById('inputTenCty').value = getVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
+                document.getElementById('inputMST').value = getVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
+            }
+
+            // 2. Xử lý ảnh ZIP
             if (type === 'zip_img' && fileZi) {
                 const zipData = await JSZip.loadAsync(fileZi);
                 for (let f in zipData.files) {
@@ -120,62 +133,56 @@
                 }
             }
 
-            if (type === 'zip_img') {
-                const valA8 = getSafe(sheet.getCell('A8'));
-                document.getElementById('inputTenCty').value = valA8.split('\n')[0];
+            // 3. Trích xuất danh sách nhân viên
+            sheet.eachRow((row, i) => {
+                const sttCell = row.getCell(1);
+                const sttVal = (sttCell.isMerged && sttCell.master ? sttCell.master.text : sttCell.text).trim();
                 
-                sheet.eachRow((row, i) => {
-                    const sttVal = getSafe(row.getCell(1));
-                    if (i >= 10 && sttVal && !isNaN(sttVal)) {
-                        const hoten = getSafe(row.getCell(3));
-                        data.push({
-                            stt: data.length+1, hoten: hoten, 
-                            manv: getSafe(row.getCell(2)), congviec: getSafe(row.getCell(4)),
-                            cccd: getSafe(row.getCell(5)), ngaysinh: getSafe(row.getCell(6)),
-                            gioitinh: getSafe(row.getCell(7)), quoctich: getSafe(row.getCell(8)),
-                            donvi: getSafe(row.getCell(9)), noidung: getSafe(row.getCell(10)),
-                            photo: anhTuZip[superClean(hoten)] || null
-                        });
+                if (i >= 10 && sttVal && !isNaN(sttVal)) {
+                    let item = {};
+                    if (type === 'zip_img') {
+                        const hoten = getVal(sheet, `C${i}`);
+                        item = {
+                            stt: data.length+1, hoten: hoten, manv: getVal(sheet, `B${i}`),
+                            congviec: getVal(sheet, `D${i}`), cccd: getVal(sheet, `E${i}`),
+                            ngaysinh: row.getCell(6).text, gioitinh: getVal(sheet, `G${i}`),
+                            quoctich: getVal(sheet, `H${i}`), donvi: getVal(sheet, `I${i}`),
+                            noidung: getVal(sheet, `J${i}`), photo: anhTuZip[superClean(hoten)] || null
+                        };
+                    } else {
+                        const hoten = getVal(sheet, `B${i}`);
+                        item = {
+                            stt: data.length+1, hoten: hoten, gioitinh: getVal(sheet, `C${i}`),
+                            ngaysinh: row.getCell(4).text, quoctich: getVal(sheet, `D${i}`),
+                            congviec: getVal(sheet, `E${i}`), cccd: getVal(sheet, `F${i}`),
+                            manv: getVal(sheet, `F${i}`), donvi: getVal(sheet, 'A2'),
+                            noidung: getVal(sheet, `H${i}`), photo: null
+                        };
                     }
-                });
-            } else {
-                const valA3 = getSafe(sheet.getCell('A3'));
-                document.getElementById('inputTenCty').value = valA3.replace(/Công ty[:\s]*/gi, "");
-                const anhExcel = {};
-                sheet.getImages().forEach(img => { if (img.range.tl.nativeCol === 8) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer; });
-                
-                sheet.eachRow((row, i) => {
-                    const sttVal = getSafe(row.getCell(1));
-                    const hoten = getSafe(row.getCell(2));
-                    if (i >= 10 && hoten && !isNaN(sttVal)) {
-                        data.push({
-                            stt: data.length+1, hoten: hoten, gioitinh: getSafe(row.getCell(3)),
-                            ngaysinh: getSafe(row.getCell(4)), quoctich: getSafe(row.getCell(5)),
-                            congviec: getSafe(row.getCell(6)), cccd: getSafe(row.getCell(7)),
-                            manv: getSafe(row.getCell(7)), donvi: getSafe(sheet.getCell('A2')),
-                            noidung: getSafe(row.getCell(8)), photo: anhExcel[i-1] || null
-                        });
-                    }
-                });
-            }
+                    data.push(item);
+                }
+            });
 
             globalDataHocVien = data;
-            const tbody = document.querySelector("#previewTable tbody");
-            tbody.innerHTML = data.map(s => {
-                const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
-                return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
-            }).join('');
+            renderTable(data);
             document.getElementById('syncSection').style.display = 'block';
             document.getElementById('btnSync').style.display = 'block';
             document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
         } catch (err) {
             console.error(err);
-            alert("Lỗi đọc file: " + err.message);
+            alert("Lỗi: " + err.message);
             document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT DỮ LIỆU";
         }
     }
 
-    // handleSync giữ nguyên logic v5.8
+    function renderTable(data) {
+        const tbody = document.querySelector("#previewTable tbody");
+        tbody.innerHTML = data.map(s => {
+            const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
+            return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
+        }).join('');
+    }
+
     async function handleSync() {
         const mst = document.getElementById('inputMST').value.trim();
         const ten = document.getElementById('inputTenCty').value.trim();
