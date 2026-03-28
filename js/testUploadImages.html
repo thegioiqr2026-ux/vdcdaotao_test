@@ -2,10 +2,14 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Lab - Fix Click v6.7</title>
+    <title>VDC Lab - Cloud Sync v6.8</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.4s ease-out; }
+    </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
@@ -15,7 +19,7 @@
                 <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-800 tracking-tight">VDC Cloud Test</h2>
-            <p class="text-slate-500 text-sm mt-1">Dự án: vdcdaotao-test (v6.7)</p>
+            <p class="text-slate-500 text-[10px] mt-1 break-all px-4">Link: ...RIV0VNmE/exec</p>
         </div>
 
         <div class="space-y-4">
@@ -24,42 +28,47 @@
                 
                 <div id="uploadContent" class="z-10 relative">
                     <i class="fa-solid fa-image text-slate-400 text-5xl mb-3 group-hover:text-blue-500 transition-colors"></i>
-                    <p id="fileNameDisplay" class="text-sm font-bold text-slate-600">Bấm vào đây để chọn ảnh</p>
-                    <p class="text-xs text-slate-400 mt-1">Hệ thống sẽ hiện ảnh xem trước ngay</p>
+                    <p id="fileNameDisplay" class="text-sm font-bold text-slate-600">Bấm để chọn ảnh học viên</p>
+                    <p class="text-xs text-slate-400 mt-1 uppercase">v6.8 - Bản chuẩn quyền Đọc/Ghi</p>
                 </div>
 
-                <div id="local-preview-box" class="hidden mt-1 p-2 bg-white rounded-lg border border-slate-200 shadow-sm relative z-20 animate-pulse">
-                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2 text-left px-2">Ảnh đã chọn:</p>
+                <div id="local-preview-box" class="hidden mt-1 p-2 bg-white rounded-lg border border-slate-200 shadow-sm relative z-20 animate-fade-in">
+                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2 text-left px-2">Xem trước ảnh:</p>
                     <img id="local-img" src="" class="w-full h-40 object-cover rounded-md border shadow-inner">
                     <span id="local-size" class="absolute top-2 right-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded"></span>
                 </div>
             </div>
 
             <button id="btnStart" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95">
-                <i class="fa-solid fa-rocket"></i> BẮT ĐẦU TẢI LÊN
+                <i class="fa-solid fa-rocket"></i> BẮT ĐẦU TẢI LÊN CLOUD
             </button>
 
-            <div id="statusBox" class="hidden p-4 rounded-xl text-sm font-semibold border text-center"></div>
+            <div id="statusBox" class="hidden p-4 rounded-xl text-sm font-bold border text-center"></div>
             
-            <div id="resultBox" class="hidden space-y-3">
+            <div id="resultBox" class="hidden space-y-3 animate-fade-in">
                 <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg border border-slate-700 text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Đã lưu thành công lên Drive</p>
-                    <a id="linkDrive" href="#" target="_blank" class="text-blue-400 underline break-all text-xs block mb-3"></a>
-                    <img id="imgPreview" src="" class="w-full h-44 object-cover rounded-lg border border-slate-700 mx-auto">
+                    <p class="text-[10px] text-emerald-400 font-bold uppercase mb-2">Đã lưu thành công lên Drive</p>
+                    <a id="linkDrive" href="#" target="_blank" class="text-blue-300 underline break-all text-[11px] block mb-3 hover:text-white transition-colors"></a>
+                    <div class="relative group">
+                        <img id="imgPreview" src="" class="w-full h-44 object-cover rounded-lg border border-slate-700 mx-auto transition-transform group-hover:scale-[1.02]">
+                        <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg pointer-events-none">
+                            <span class="text-white text-[10px] bg-slate-800/80 px-2 py-1 rounded">Ảnh từ Google Drive</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-slate-100 text-[10px] text-center text-slate-400 uppercase tracking-widest">
-            VDC Safety Training System
+        <div class="mt-6 pt-4 border-t border-slate-100 text-[10px] text-center text-slate-400 uppercase tracking-widest font-bold">
+            VDC Safety Training & Consultant
         </div>
     </div>
 
     <script type="module">
         import { db, ref, set } from '../js/firebase-config.js';
 
-        // URL Web App của bạn (Bản v5.8 đã fix CORS)
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxYQW1o_VKQAhaJPJsUzXxR0AJD7Y7gR5tlMrcFKDGcgOGldUee66HtiwO37r2cuma3/exec";
+        // CẬP NHẬT LINK WEB APP MỚI CỦA BẠN (v6.8)
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz4GegB1JT9EjMHucBC-OJKqYIFUROfCesHu5XIWKyAkqrks6wOHZ8m5QK5GRI0VNmE/exec";
 
         const fileInput = document.getElementById('testFile');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -70,44 +79,43 @@
         const statusBox = document.getElementById('statusBox');
         const resultBox = document.getElementById('resultBox');
 
-        // SỬ KIỆN CHỌN FILE
+        // HIỂN THỊ ẢNH NGAY KHI CHỌN (XEM TRƯỚC CỤC BỘ)
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if(file) {
-                // Hiển thị Preview ngay lập tức
                 uploadContent.classList.add('hidden');
                 localPreviewBox.classList.remove('hidden');
                 localImg.src = URL.createObjectURL(file);
                 localSize.innerText = (file.size / 1024).toFixed(1) + " KB";
                 fileNameDisplay.innerText = file.name;
                 
-                // Reset kết quả cũ nếu có
+                // Ẩn các thông báo cũ
                 resultBox.classList.add('hidden');
                 statusBox.classList.add('hidden');
             }
         };
 
-        // SỰ KIỆN TẢI LÊN
+        // XỬ LÝ TẢI LÊN
         async function runTest() {
             const file = fileInput.files[0];
-            if (!file) return alert("Bạn chưa chọn ảnh!");
+            if (!file) return alert("Bạn chưa chọn tấm ảnh nào!");
 
             statusBox.className = "p-4 rounded-xl text-sm font-bold border bg-blue-50 border-blue-200 text-blue-700 block text-center animate-pulse";
-            statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ĐANG TẢI LÊN CLOUD...`;
+            statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ĐANG TẢI LÊN CLOUD VDC...`;
 
             const reader = new FileReader();
             reader.onload = async function(event) {
                 const base64 = event.target.result.split(',')[1];
                 
                 try {
-                    // 1. Gửi lên Drive qua GAS
+                    // 1. Gửi lên Google Drive qua GAS v6.3
                     const res = await fetch(GAS_URL, {
                         method: 'POST',
                         body: JSON.stringify({
                             type: "upload",
-                            mst: "VDC_TEST",
-                            tenCty: "VDC LAB",
-                            cccd: "999999",
+                            mst: "VDC_FINAL_TEST",
+                            tenCty: "KIEM_TRA_TOAN_DIEN",
+                            cccd: "99998888",
                             base64: base64
                         })
                     });
@@ -117,28 +125,29 @@
                     if (resJson.status === "success") {
                         const driveLink = resJson.fileUrl;
                         
-                        // 2. Ghi Firebase
+                        // 2. Đồng bộ kết quả vào Firebase
                         await set(ref(db, 'TestUpload/LastImage'), {
                             url: driveLink,
-                            time: new Date().toISOString()
+                            updateAt: new Date().toLocaleString('vi-VN'),
+                            version: "6.8 Stable"
                         });
 
-                        // 3. Kết quả
+                        // 3. Hiển thị UI thành công rực rỡ
                         statusBox.className = "p-4 rounded-xl text-sm font-bold border bg-emerald-100 border-emerald-200 text-emerald-700 block text-center";
-                        statusBox.innerHTML = `✅ THÀNH CÔNG RỰC RỠ!`;
+                        statusBox.innerHTML = `✅ THÀNH CÔNG RỰC RỠ v6.8!`;
                         
                         resultBox.classList.remove('hidden');
                         document.getElementById('linkDrive').href = driveLink;
                         document.getElementById('linkDrive').innerText = driveLink;
                         document.getElementById('imgPreview').src = driveLink;
-                        localPreviewBox.classList.remove('animate-pulse');
 
                     } else {
                         throw new Error(resJson.message);
                     }
                 } catch (error) {
                     statusBox.className = "p-4 rounded-xl text-sm font-bold border bg-red-100 border-red-200 text-red-700 block text-center";
-                    statusBox.innerHTML = `❌ LỖI: ${error.message}`;
+                    statusBox.innerHTML = `❌ LỖI HỆ THỐNG: ${error.message}`;
+                    console.error("Lỗi:", error);
                 }
             };
             reader.readAsDataURL(file);
