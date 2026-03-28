@@ -1,0 +1,115 @@
+<!-- Version: 1.1 -->
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tải ảnh lên Drive</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .upload-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    button {
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #357ae8;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+    a {
+      color: #4285F4;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="upload-container">
+    <h2>Tải ảnh lên Google Drive</h2>
+    <input type="file" id="fileInput" accept="image/*">
+    <br>
+    <button id="uploadBtn" onclick="uploadImage()">Tải Lên</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    function uploadImage() {
+      const fileInput = document.getElementById('fileInput');
+      const statusDiv = document.getElementById('status');
+      const uploadBtn = document.getElementById('uploadBtn');
+
+      if (fileInput.files.length === 0) {
+        statusDiv.innerHTML = '<span style="color: red;">Vui lòng chọn một hình ảnh!</span>';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      statusDiv.innerHTML = 'Đang tải lên, vui lòng đợi...';
+      uploadBtn.disabled = true;
+
+      // Xử lý khi đọc file thành công
+      reader.onloadend = function() {
+        const base64Data = reader.result;
+
+        // Gọi hàm Apps Script
+        google.script.run
+          .withSuccessHandler(function(url) {
+            statusDiv.innerHTML = 'Tải lên thành công! <br><br><a href="' + url + '" target="_blank">Xem ảnh trên Drive</a>';
+            uploadBtn.disabled = false;
+            fileInput.value = ''; // Reset input
+          })
+          .withFailureHandler(function(error) {
+            statusDiv.innerHTML = '<span style="color: red;">Lỗi: ' + error.message + '</span>';
+            uploadBtn.disabled = false;
+          })
+          .uploadFileToDrive(base64Data, file.name, file.type);
+      };
+
+      // Đọc file dưới dạng URL Data (Base64)
+      reader.readAsDataURL(file);
+    }
+  </script>
+
+</body>
+</html>
