@@ -2,15 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống VDC CRM v5.0</title>
+    <title>Hệ thống VDC CRM v5.1</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
-        /* CSS điều khiển Sidebar thu gọn */
         #layout-sidebar { width: 64px; transition: width 0.3s; overflow: hidden; }
         #layout-sidebar.expanded, #layout-sidebar:hover { width: 260px; }
         .menu-text { display: none; white-space: nowrap; margin-left: 12px; }
@@ -24,13 +20,33 @@
             <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold flex-shrink-0">V</div>
             <span class="menu-text font-bold text-lg text-white">VDC CRM</span>
         </div>
-        <div id="sidebar-menu-container" class="flex-1 overflow-y-auto overflow-x-hidden">
-            </div>
+        
+        <ul class="flex-1 px-2 py-4 space-y-2">
+            <li class="flex items-center p-3 hover:bg-slate-800 rounded-lg cursor-pointer group" onclick="loadView('views/kanban.html')">
+                <i class="fa-solid fa-layer-group w-8 text-center text-xl text-blue-400"></i>
+                <span class="menu-text">Bảng điều khiển</span>
+            </li>
+            <li class="flex items-center p-3 hover:bg-slate-800 rounded-lg cursor-pointer group" onclick="loadView('views/loadExcel.html')">
+                <i class="fa-solid fa-users-gear w-8 text-center text-xl text-emerald-400"></i>
+                <span class="menu-text">Thông tin học viên</span>
+            </li>
+            <li class="flex items-center p-3 hover:bg-slate-800 rounded-lg cursor-pointer group" onclick="loadView('printdoc.html')">
+                <i class="fa-solid fa-id-card w-8 text-center text-xl text-amber-400"></i>
+                <span class="menu-text">In thẻ</span>
+            </li>
+        </ul>
+
+        <div class="p-4 border-t border-slate-800">
+            <button class="flex items-center w-full p-2 hover:bg-red-900/30 text-red-400 rounded-lg" onclick="window.location.href='login.html'">
+                <i class="fa-solid fa-right-from-bracket w-8 text-center text-xl"></i>
+                <span class="menu-text">Đăng xuất</span>
+            </button>
+        </div>
     </aside>
 
     <main class="flex-1 flex flex-col min-w-0 bg-white">
-        <div id="layout-content" class="h-full w-full overflow-hidden">
-            <div class="flex items-center justify-center h-full text-blue-500">
+        <div id="layout-content" class="h-full w-full overflow-hidden relative">
+            <div id="loading-init" class="flex items-center justify-center h-full text-blue-500">
                 <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
             </div>
         </div>
