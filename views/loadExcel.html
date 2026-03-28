@@ -1,258 +1,223 @@
-<!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>VDC CRM - Power Sync v7.6</title>
-    <script src="../js/exceljs.min.js"></script>
-    <script src="../js/jszip.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .sidebar-gradient { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
-        .file-drop-area { position: relative; display: flex; flex-direction: column; align-items: center; padding: 25px 15px; border: 2px dashed #e2e8f0; border-radius: 20px; transition: all 0.3s ease; background: #fff; }
-        .file-drop-area:hover { border-color: #3b82f6; background: #eff6ff; }
-        .file-drop-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; }
-        .main-table-wrapper { background: #fff; border-radius: 30px; box-shadow: 0 10px 50px -12px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; height: calc(100vh - 180px); overflow: hidden; display: flex; flex-direction: column; }
-        .table-scroll { flex: 1; overflow-y: auto; padding: 0 24px 24px 24px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-        th { position: sticky; top: 0; background: white; z-index: 20; padding: 20px 15px; text-transform: uppercase; font-size: 11px; font-weight: 900; color: #94a3b8; border-bottom: 1px solid #f1f5f9; text-align: left; }
-        .row-card td { padding: 12px 15px; background: white; border-top: 1px solid #f8fafc; border-bottom: 1px solid #f8fafc; font-size: 12px; }
-        .row-card td:first-child { border-left: 1px solid #f8fafc; border-radius: 15px 0 0 15px; text-align: center; }
-        .row-card td:last-child { border-right: 1px solid #f8fafc; border-radius: 0 15px 15px 0; text-align: right; }
-        .avatar-frame { width: 40px; height: 55px; border-radius: 6px; object-fit: cover; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 2px solid white; }
-    </style>
+    <meta charset="UTF-8">
+    <title>VDC Thông tin học viên v6.2</title>
+    <script src="../js/exceljs.min.js"></script>
+    <script src="../js/jszip.min.js"></script>
+    <script src="../js/firebase-config.js" type="module"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #fff; overflow: hidden; }
+        .sidebar-in { width: 310px; background: #f8fafc; border-right: 1px solid #e2e8f0; padding: 15px; overflow-y: auto; flex-shrink: 0; }
+        .main-content { flex: 1; padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 12px; color: #64748b; }
+        input, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box; }
+        .table-container { flex: 1; border: 1px solid #e2e8f0; border-radius: 4px; overflow: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1600px; }
+        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; z-index: 10; }
+        td { padding: 6px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; }
+        .btn-preview { background: #2563eb; }
+        .btn-sync { background: #10b981; display: none; }
+        .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; margin-top: 10px; display: none; overflow: hidden; }
+        #progressFill { height: 100%; width: 0%; background: #10b981; transition: width 0.3s; }
+        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
+        #status { margin-top: 8px; font-size: 12px; text-align: center; color: #3b82f6; font-weight: 600; }
+    </style>
 </head>
-<body class="bg-[#fcfdfe] font-sans text-slate-800">
+<body>
 
-    <div class="flex h-screen overflow-hidden">
-        <div class="w-96 sidebar-gradient border-r border-slate-200 p-8 flex flex-col shadow-2xl z-20 overflow-y-auto">
-            <div class="mb-8">
-                <h1 class="text-2xl font-black tracking-tighter text-slate-800">VDC<span class="text-blue-600">.CRM</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Special Fix v7.6</p>
-            </div>
+<div class="sidebar-in">
+    <div class="form-group">
+        <label>LOẠI FILE & ẢNH:</label>
+        <select id="templateType">
+            <option value="excel_img" selected>1. Mẫu TTHV (Ảnh trong Excel)</option>
+            <option value="zip_img">2. Mẫu Long Phương (Ảnh trong ZIP)</option>
+        </select>
+    </div>
+    
+    <div class="form-group"><label>FILE EXCEL (.xlsx):</label><input type="file" id="fileExcel" accept=".xlsx"></div>
+    <div class="form-group" id="zipGroup" style="display:none;"><label>FILE ZIP HÌNH ẢNH:</label><input type="file" id="fileZip" accept=".zip"></div>
 
-            <div class="space-y-5 flex-1">
-                <div class="space-y-2">
-                    <label class="text-[11px] font-black text-slate-500 uppercase px-1">Loại file & Ảnh</label>
-                    <select id="templateType" class="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                        <option value="excel_img">1. Mẫu TTHV (Ảnh trong Excel)</option>
-                        <option value="zip_img">2. Mẫu Long Phương (Ảnh trong ZIP)</option>
-                    </select>
-                </div>
+    <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+        <label>MÃ SỐ THUẾ:</label>
+        <input type="text" id="inputMST" placeholder="MST tự động...">
+        <label style="margin-top:8px;">TÊN CÔNG TY:</label>
+        <input type="text" id="inputTenCty" placeholder="Tên cty tự động...">
+    </div>
 
-                <div class="space-y-3">
-                    <div class="file-drop-area group">
-                        <i class="fa-solid fa-file-excel text-3xl text-slate-300 group-hover:text-blue-500 mb-2"></i>
-                        <p class="text-[10px] font-black text-slate-400 uppercase">File Excel (.xlsx)</p>
-                        <input type="file" id="fileExcel" accept=".xlsx">
-                    </div>
-                    <div id="zipGroup" class="hidden file-drop-area group border-emerald-100 bg-emerald-50/20">
-                        <i class="fa-solid fa-file-zipper text-3xl text-emerald-300 group-hover:text-emerald-500 mb-2"></i>
-                        <p class="text-[10px] font-black text-emerald-400 uppercase">File Ảnh (.zip)</p>
-                        <input type="file" id="fileZip" accept=".zip">
-                    </div>
-                </div>
+    <button class="btn btn-preview" id="btnPreview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
+    
+    <div id="syncSection" style="display:none;">
+        <button id="btnSync" class="btn btn-sync">🚀 ĐỒNG BỘ VDC CLOUD</button>
+        <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
+        <div id="status"></div>
+    </div>
+    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 20px;">v6.2 - TTHV Special Fix</p>
+</div>
 
-                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Mã số thuế</label>
-                        <input type="text" id="inputMST" class="w-full text-xs font-black focus:ring-0 border-none p-0" placeholder="Chờ trích xuất...">
-                    </div>
-                    <div class="border-t border-slate-50 pt-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Tên công ty</label>
-                        <input type="text" id="inputTenCty" class="w-full text-xs font-bold text-blue-600 focus:ring-0 border-none p-0 italic" placeholder="Chờ trích xuất...">
-                    </div>
-                </div>
-
-                <button id="btnPreview" class="w-full bg-slate-800 hover:bg-black text-white font-black py-4 rounded-2xl shadow-xl transition-all text-xs uppercase tracking-widest">🔍 Trích xuất dữ liệu</button>
-
-                <div id="syncSection" class="hidden space-y-4 pt-4 border-t border-slate-100 animate-fade-in">
-                    <button id="btnSync" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3">
-                        <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i> ĐỒNG BỘ CLOUD VDC
-                    </button>
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-[10px] font-black text-slate-400 uppercase">
-                            <span id="statusText">Sẵn sàng...</span>
-                            <span id="percentText">0%</span>
-                        </div>
-                        <div class="bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                            <div id="progressFill" class="h-full bg-blue-600 transition-all w-0"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex-1 p-8 flex flex-col bg-[#fcfdfe]">
-            <div class="flex justify-between items-end mb-6 px-4">
-                <div>
-                    <h3 class="text-xl font-black text-slate-800 tracking-tight uppercase">Bảng điều khiển trích xuất</h3>
-                    <p class="text-xs text-slate-400 font-medium italic">Hệ thống xử lý ô gộp & Rich Text chuẩn VDC</p>
-                </div>
-                <div id="countAll" class="bg-white px-5 py-2 rounded-xl shadow-sm border border-slate-100 font-black text-blue-600 text-sm">0 học viên</div>
-            </div>
-
-            <div class="main-table-wrapper">
-                <div class="table-scroll">
-                    <table id="hocVienTable">
-                        <thead>
-                            <tr>
-                                <th class="w-16">STT</th>
-                                <th class="w-24">Ảnh</th>
-                                <th>Họ và Tên</th>
-                                <th>Ngày sinh</th>
-                                <th>CCCD</th>
-                                <th>Chức vụ</th>
-                                <th>Đơn vị</th>
-                                <th class="text-right">Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="main-content">
+    <div class="table-container">
+        <table id="previewTable">
+            <thead>
+                <tr>
+                    <th>STT</th><th>Ảnh</th><th>Họ và Tên</th><th>Ngày sinh</th><th>Giới tính</th><th>CCCD</th><th>Chức vụ</th><th>Mã NV</th><th>Quốc tịch</th><th>NHÓM</th><th>NỘI DUNG HL</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
 <script type="module">
-    import { db, ref, set } from '../js/firebase-config.js';
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxKY8mO5USmDe3DyiYPNLpt0x64l8YN_Z_4TgoEdUs1F0Nw_pnjZd1XU6V2lL_Wl_lS/exec";
+    import { db, ref, set } from '../js/firebase-config.js';
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
 
-    let globalDataHocVien = [];
+    let globalDataHocVien = [];
 
-    // Logic lấy giá trị an toàn từ code v6.2 của bạn
-    const getSafeVal = (sheet, addr) => {
-        const cell = sheet.getCell(addr);
-        const target = cell.isMerged && cell.master ? cell.master : cell;
-        let val = target.value;
-        if (!val) return "";
-        if (typeof val === 'object') {
-            if (val.richText) return val.richText.map(t => t.text).join('').trim();
-            if (val.result !== undefined) return (val.result || "").toString().trim();
-            return "";
-        }
-        return val.toString().trim();
-    };
+    // Hàm lấy giá trị an toàn, xử lý cả Rich Text và Ô gộp
+    const getSafeVal = (sheet, addr) => {
+        const cell = sheet.getCell(addr);
+        const target = cell.isMerged && cell.master ? cell.master : cell;
+        let val = target.value;
+        if (!val) return "";
+        if (typeof val === 'object') {
+            if (val.richText) return val.richText.map(t => t.text).join('').trim();
+            if (val.result !== undefined) return (val.result || "").toString().trim();
+            return "";
+        }
+        return val.toString().trim();
+    };
 
-    const superClean = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "") : "";
+    const superClean = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "");
 
-    document.getElementById('templateType').onchange = (e) => {
-        document.getElementById('zipGroup').classList.toggle('hidden', e.target.value !== 'zip_img');
-    };
+    document.getElementById('templateType').onchange = (e) => {
+        document.getElementById('zipGroup').style.display = (e.target.value === 'zip_img') ? 'block' : 'none';
+    };
 
-    document.getElementById('btnPreview').onclick = async () => {
-        const type = document.getElementById('templateType').value;
-        const fileEx = document.getElementById('fileExcel').files[0];
-        const fileZi = document.getElementById('fileZip').files[0];
-        if (!fileEx) return alert("Vui lòng chọn file Excel!");
-        
-        try {
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT DỮ LIỆU...";
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(await fileEx.arrayBuffer());
-            const sheet = workbook.worksheets[0];
-            let data = [];
+    async function handlePreview() {
+        const type = document.getElementById('templateType').value;
+        const fileEx = document.getElementById('fileExcel').files[0];
+        const fileZi = document.getElementById('fileZip').files[0];
+        if (!fileEx) return alert("Chọn file Excel!");
+        
+        try {
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT ẢNH...";
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(await fileEx.arrayBuffer());
+            const sheet = workbook.worksheets[0];
+            let data = [];
 
-            // Logic bóc ảnh Excel v6.2
-            const anhExcel = {};
-            sheet.getImages().forEach(img => {
-                const row = img.range.tl.nativeRow;
-                if (img.range.tl.nativeCol >= 7) anhExcel[row] = workbook.getImage(img.imageId).buffer;
-            });
+            // 1. TRÍCH XUẤT ẢNH TRƯỚC (Dò tất cả các cột từ H đến K để tránh sót ảnh)
+            const anhExcel = {};
+            sheet.getImages().forEach(img => {
+                const row = img.range.tl.nativeRow;
+                const col = img.range.tl.nativeCol;
+                // Nếu ảnh nằm từ cột index 7 (H) trở đi
+                if (col >= 7) {
+                    anhExcel[row] = workbook.getImage(img.imageId).buffer;
+                }
+            });
 
-            // Lấy MST/Tên Cty chuẩn v6.2
-            if (type === 'excel_img') {
-                document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "").trim();
-                document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "").trim();
-            } else {
-                const info = getSafeVal(sheet, 'A8');
-                document.getElementById('inputTenCty').value = info.split('\n')[0];
-                const mst = info.match(/[0-9]{10,}/);
-                if (mst) document.getElementById('inputMST').value = mst[0];
-            }
+            // 2. LẤY MST & TÊN CTY (Xử lý ô gộp mẫu TTHV)
+            if (type === 'excel_img') {
+                const rawCty = getSafeVal(sheet, 'A3');
+                document.getElementById('inputTenCty').value = rawCty.replace(/Công ty[:\s]*/gi, "").trim();
+                const rawMST = getSafeVal(sheet, 'A4');
+                document.getElementById('inputMST').value = rawMST.replace(/Mã số thuế[:\s]*/gi, "").trim();
+            } else {
+                const infoText = getSafeVal(sheet, 'A8');
+                document.getElementById('inputTenCty').value = infoText.split('\n')[0];
+                const mstMatch = infoText.match(/[0-9]{10,}/);
+                if (mstMatch) document.getElementById('inputMST').value = mstMatch[0];
+            }
 
-            // Logic bóc ZIP v6.2
-            let anhTuZip = {};
-            if (type === 'zip_img' && fileZi) {
-                const zipData = await JSZip.loadAsync(fileZi);
-                for (let f in zipData.files) {
-                    if (f.match(/\.(jpg|jpeg|png)$/i)) {
-                        const rawName = f.split('/').pop().split('.').shift();
-                        anhTuZip[superClean(rawName)] = await zipData.files[f].async("arraybuffer");
-                    }
-                }
-            }
+            // 3. XỬ LÝ ZIP NẾU CÓ
+            let anhTuZip = {};
+            if (type === 'zip_img' && fileZi) {
+                const zipData = await JSZip.loadAsync(fileZi);
+                for (let f in zipData.files) {
+                    if (f.match(/\.(jpg|jpeg|png)$/i)) {
+                        const rawName = f.split('/').pop().split('.').shift();
+                        anhTuZip[superClean(rawName)] = await zipData.files[f].async("arraybuffer");
+                    }
+                }
+            }
 
-            sheet.eachRow((row, i) => {
-                const sttVal = row.getCell(1).text.trim();
-                if (i >= 10 && sttVal && !isNaN(sttVal)) {
-                    const hoten = (type === 'excel_img') ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
-                    const item = {
-                        stt: data.length + 1,
-                        hoten: hoten,
-                        gioitinh: (type === 'excel_img') ? getSafeVal(sheet, `C${i}`) : getSafeVal(sheet, `G${i}`),
-                        ngaysinh: (type === 'excel_img') ? row.getCell(4).text : row.getCell(6).text,
-                        cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
-                        congviec: (type === 'excel_img') ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
-                        donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
-                        photo: anhExcel[i-1] || anhTuZip[superClean(hoten)] || null
-                    };
-                    data.push(item);
-                }
-            });
+            // 4. DUYỆT DANH SÁCH (Bắt đầu từ dòng 10)
+            sheet.eachRow((row, i) => {
+                const sttVal = row.getCell(1).text.trim();
+                if (i >= 10 && sttVal && !isNaN(sttVal)) {
+                    if (type === 'excel_img') {
+                        // Cấu trúc Mẫu 1 TTHV
+                        const hoten = getSafeVal(sheet, `B${i}`);
+                        data.push({
+                            stt: data.length+1, hoten: hoten, gioitinh: getSafeVal(sheet, `C${i}`),
+                            ngaysinh: row.getCell(4).text, quoctich: getSafeVal(sheet, `E${i}`),
+                            congviec: getSafeVal(sheet, `F${i}`), cccd: getSafeVal(sheet, `G${i}`),
+                            manv: getSafeVal(sheet, `G${i}`), donvi: getSafeVal(sheet, 'A2') || "VDC",
+                            noidung: getSafeVal(sheet, `H${i}`),
+                            photo: anhExcel[i-1] || anhTuZip[superClean(hoten)] || null
+                        });
+                    } else {
+                        // Cấu trúc Mẫu 2 Long Phương
+                        const hoten = getSafeVal(sheet, `C${i}`);
+                        data.push({
+                            stt: data.length+1, hoten: hoten, manv: getSafeVal(sheet, `B${i}`),
+                            congviec: getSafeVal(sheet, `D${i}`), cccd: getSafeVal(sheet, `E${i}`),
+                            ngaysinh: row.getCell(6).text, gioitinh: getSafeVal(sheet, `G${i}`),
+                            quoctich: getSafeVal(sheet, `H${i}`), donvi: getSafeVal(sheet, `I${i}`),
+                            noidung: getSafeVal(sheet, `J${i}`), photo: anhTuZip[superClean(hoten)] || null
+                        });
+                    }
+                }
+            });
 
-            globalDataHocVien = data;
-            const tbody = document.querySelector("#hocVienTable tbody");
-            tbody.innerHTML = data.map(s => `
-                <tr class="row-card animate-fade-in">
-                    <td>${s.stt}</td>
-                    <td>${s.photo ? `<img src="${URL.createObjectURL(new Blob([s.photo]))}" class="avatar-frame">` : '❌'}</td>
-                    <td class="font-bold text-slate-700">${s.hoten}</td>
-                    <td>${s.ngaysinh}</td>
-                    <td class="font-mono text-slate-500">${s.cccd}</td>
-                    <td class="text-[11px] font-medium">${s.congviec}</td>
-                    <td class="text-[10px] font-black text-slate-400 uppercase">${s.donvi}</td>
-                    <td id="status-${s.cccd}" class="text-blue-300 italic text-[10px]">Chờ Cloud...</td>
-                </tr>
-            `).join('');
-            
-            document.getElementById('syncSection').classList.remove('hidden');
-            document.getElementById('countAll').innerText = data.length + " học viên";
-            document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
-        } catch (e) { alert("Lỗi: " + e.message); document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT DỮ LIỆU"; }
-    };
+            globalDataHocVien = data;
+            const tbody = document.querySelector("#previewTable tbody");
+            tbody.innerHTML = data.map(s => {
+                const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
+                return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
+            }).join('');
+            
+            document.getElementById('syncSection').style.display = 'block';
+            document.getElementById('btnSync').style.display = 'block';
+            document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
 
-    document.getElementById('btnSync').onclick = async () => {
-        const mst = document.getElementById('inputMST').value.trim();
-        const ten = document.getElementById('inputTenCty').value.trim();
-        if(!mst) return alert("Vui lòng nhập MST!");
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi: " + err.message);
+            document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT DỮ LIỆU";
+        }
+    }
 
-        document.getElementById('btnSync').disabled = true;
-        for (let i = 0; i < globalDataHocVien.length; i++) {
-            const s = globalDataHocVien[i];
-            const pct = Math.round(((i + 1) / globalDataHocVien.length) * 100);
-            document.getElementById('progressFill').style.width = pct + "%";
-            document.getElementById('percentText').innerText = pct + "%";
-            document.getElementById('statusText').innerText = `Sync: ${s.hoten}`;
+    async function handleSync() {
+        const mst = document.getElementById('inputMST').value.trim();
+        const ten = document.getElementById('inputTenCty').value.trim();
+        if(!mst) return alert("Nhập MST!");
+        document.getElementById('pBar').style.display = 'block';
+        document.getElementById('btnSync').style.display = 'none';
+        for (let i = 0; i < globalDataHocVien.length; i++) {
+            const s = globalDataHocVien[i];
+            const pct = Math.round(((i + 1) / globalDataHocVien.length) * 100);
+            document.getElementById('progressFill').style.width = pct + "%";
+            document.getElementById('status').innerText = `Đang đồng bộ: ${s.hoten}`;
+            let driveUrl = "";
+            if (s.photo) {
+                const base64 = btoa(new Uint8Array(s.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
+                try {
+                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) });
+                    const resJson = await res.json();
+                    if (resJson.status === "success") driveUrl = resJson.fileUrl;
+                } catch(e) {}
+            }
+            await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...s, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() });
+        }
+        document.getElementById('status').innerText = "✅ HOÀN TẤT!";
+    }
 
-            let driveUrl = "";
-            if (s.photo) {
-                const base64 = btoa(new Uint8Array(s.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
-                try {
-                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) });
-                    const resJson = await res.json();
-                    if (resJson.status === "success") {
-                        driveUrl = resJson.fileUrl;
-                        document.getElementById(`status-${s.cccd}`).innerHTML = `<span class="text-emerald-500 font-black uppercase text-[9px]">✅ Drive OK</span>`;
-                    }
-                } catch(e) {}
-            }
-            // Lưu Firebase (Lược bỏ Buffer ảnh để nhẹ DB)
-            const { photo, ...dataSave } = s;
-            await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...dataSave, PhotoUrl: driveUrl, NgayCapNhat: new Date().toLocaleString('vi-VN') });
-        }
-        document.getElementById('statusText').innerText = "ĐỒNG BỘ HOÀN TẤT!";
-    };
+    document.getElementById('btnPreview').addEventListener('click', handlePreview);
+    document.getElementById('btnSync').addEventListener('click', handleSync);
 </script>
 </body>
 </html>
