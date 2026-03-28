@@ -1,22 +1,40 @@
 /**
  * VDC CRM - Main Controller
- * Phiên bản: 4.9
- * Khắc phục lỗi nạp trang chủ và đồng bộ Iframe
+ * Phiên bản: 4.9.2 (Bản hoàn thiện - Tích hợp loadComponent)
+ * Chức năng: Điều phối View, Quản lý Sidebar & Iframe Navigation
  */
 
+// 1. HÀM NẠP COMPONENT (Tích hợp để tránh lỗi ReferenceError)
+async function loadComponent(id, file) {
+    try {
+        const response = await fetch(file);
+        if (!response.ok) throw new Error(`Không thể tải file: ${file}`);
+        const html = await response.text();
+        const targetElement = document.getElementById(id);
+        if (targetElement) {
+            targetElement.innerHTML = html;
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error("Lỗi hệ thống khi nạp component:", error);
+        return false;
+    }
+}
+
+// 2. HÀM ĐIỀU PHỐI GIAO DIỆN CHÍNH
 window.loadView = async function(viewFile) {
     const contentDiv = document.getElementById('layout-content');
     const sidebar = document.getElementById('layout-sidebar');
     
-    // Kiểm tra xem các phần tử HTML có tồn tại không để tránh lỗi trắng trang
     if (!contentDiv) {
-        console.error("Lỗi: Không tìm thấy phần tử 'layout-content' trong index.html");
+        console.error("Lỗi: Không tìm thấy vùng hiển thị 'layout-content'");
         return;
     }
 
     const timestamp = new Date().getTime();
 
-    // 1. ĐIỀU KHIỂN SIDEBAR
+    // TỰ ĐỘNG THU GỌN SIDEBAR KHI VÀO TRANG DỮ LIỆU LỚN
     if (sidebar) {
         if (viewFile === 'views/loadExcel.html' || viewFile === 'printdoc.html') {
             sidebar.classList.remove('expanded'); 
@@ -25,14 +43,14 @@ window.loadView = async function(viewFile) {
         }
     }
 
-    // 2. HIỂN THỊ LOADING
+    // HIỂN THỊ TRẠNG THÁI LOADING
     contentDiv.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#3b82f6;">
             <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem; margin-bottom:10px;"></i>
-            <span style="font-size:12px; color:#64748b;">Đang nạp module...</span>
+            <span style="font-size:12px; color:#64748b; font-weight:500;">Đang nạp hệ thống...</span>
         </div>`;
 
-    // 3. ĐIỀU PHỐI NẠP NỘI DUNG
+    // SỬ DỤNG IFRAME CHO MODULE THÔNG TIN HỌC VIÊN & IN THẺ
     if (viewFile === 'printdoc.html' || viewFile === 'views/loadExcel.html') {
         contentDiv.innerHTML = `
             <iframe src="${viewFile}?v=${timestamp}" 
@@ -41,34 +59,37 @@ window.loadView = async function(viewFile) {
         return;
     }
 
-    // Nạp component bằng hàm loadComponent có sẵn trong hệ thống
+    // NẠP CÁC TRANG COMPONENT (KANBAN, ADMIN...)
     try {
-        if (typeof loadComponent === 'function') {
-            await loadComponent("layout-content", viewFile);
-            
-            // Khởi tạo lại logic sau khi nạp
-            if (viewFile === 'views/kanban.html' && typeof setupKanbanEvents === 'function') setupKanbanEvents();
-            if (viewFile === 'views/admin-trainers.html' && typeof setupTrainerEvents === 'function') setupTrainerEvents();
-        } else {
-            contentDiv.innerHTML = `<div style="padding:20px; color:red;">Lỗi: Hàm loadComponent chưa được định nghĩa.</div>`;
+        const success = await loadComponent("layout-content", viewFile);
+        if (success) {
+            // Khởi tạo các sự kiện đặc thù sau khi nạp xong HTML
+            if (viewFile === 'views/kanban.html' && typeof setupKanbanEvents === 'function') {
+                setupKanbanEvents();
+            }
+            if (viewFile === 'views/admin-trainers.html' && typeof setupTrainerEvents === 'function') {
+                setupTrainerEvents();
+            }
         }
     } catch (error) {
-        console.error("Lỗi nạp view:", error);
-        contentDiv.innerHTML = `<div style="padding:20px; color:red;">Không thể nạp: ${viewFile}</div>`;
+        console.error("Lỗi khi nạp View:", error);
+        contentDiv.innerHTML = `<div style="padding:20px; color:red; text-align:center;">Lỗi kết nối module: ${viewFile}</div>`;
     }
 };
 
-// Khởi tạo khi trang sẵn sàng
+// 3. KHỞI CHẠY KHI TRANG SẴN SÀNG
 document.addEventListener('DOMContentLoaded', () => {
-    // Đảm bảo nạp trang mặc định
+    // Mặc định nạp Bảng điều khiển (Kanban)
     const defaultView = 'views/kanban.html';
     loadView(defaultView);
     
-    // Sự kiện nút đăng xuất
+    // Xử lý nút Đăng xuất
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) {
-        btnLogout.onclick = () => {
-            if (confirm("Xác nhận đăng xuất?")) window.location.href = 'login.html';
+        btnLogout.onclick = function() {
+            if (confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống VDC?")) {
+                window.location.href = 'login.html';
+            }
         };
     }
 });
