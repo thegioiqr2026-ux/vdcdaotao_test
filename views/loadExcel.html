@@ -2,81 +2,164 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC - Load Excel v7.2</title>
+    <title>VDC CRM - Load Excel v7.3</title>
     <script src="../js/exceljs.min.js"></script>
-    <script src="../js/firebase-config.js" type="module"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .table-container { height: calc(100vh - 250px); overflow: auto; }
-        table { min-width: 1200px; border-collapse: separate; border-spacing: 0; }
-        th { position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0; }
-        .progress-fill { transition: width 0.4s ease-in-out; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.4s ease-out; }
+        
+        .sidebar-gradient { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
+        
+        /* Vùng chọn file to, hiện đại */
+        .file-drop-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 24px;
+            transition: all 0.3s ease;
+            background-color: #ffffff;
+        }
+        .file-drop-area:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .file-drop-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; }
+
+        /* Giao diện Bảng rộng rãi */
+        .main-table-wrapper {
+            background: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 10px 50px -12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 180px);
+            overflow: hidden;
+        }
+
+        .table-scroll { flex: 1; overflow-y: auto; padding: 0 24px 24px 24px; }
+        
+        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        
+        th { 
+            position: sticky; top: 0; background: white; z-index: 20; padding: 20px 15px;
+            text-transform: uppercase; font-size: 11px; font-weight: 900; color: #94a3b8;
+            letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; text-align: left;
+        }
+
+        .row-card td { padding: 15px; background: white; border-top: 1px solid #f8fafc; border-bottom: 1px solid #f8fafc; transition: all 0.2s; }
+        .row-card td:first-child { border-left: 1px solid #f8fafc; border-radius: 15px 0 0 15px; text-align: center; }
+        .row-card td:last-child { border-right: 1px solid #f8fafc; border-radius: 0 15px 15px 0; text-align: right; }
+        .row-card:hover td { background: #f8faff; border-color: #e0e7ff; }
+
+        .avatar-frame { width: 45px; height: 60px; border-radius: 8px; object-fit: cover; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 2px solid white; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800">
+<body class="bg-[#fcfdfe] font-sans text-slate-800">
 
     <div class="flex h-screen overflow-hidden">
-        <div class="w-80 bg-white border-right border-slate-200 p-6 flex flex-col shadow-xl z-20">
-            <div class="mb-8 text-center">
-                <h1 class="text-xl font-black tracking-tighter text-blue-600">VDC CRM <span class="text-[10px] bg-blue-100 px-2 py-0.5 rounded text-blue-500">v7.2</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Đồng bộ Cloud Học Viên</p>
-            </div>
-
-            <div class="space-y-4 flex-1">
+        
+        <div class="w-96 sidebar-gradient border-r border-slate-200 p-8 flex flex-col shadow-2xl z-20 overflow-y-auto">
+            
+            <div class="mb-10 flex items-center justify-between">
                 <div>
-                    <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase">1. Chọn File Excel học viên</label>
-                    <input type="file" id="fileExcel" accept=".xlsx" class="w-full text-xs border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <h1 class="text-2xl font-black tracking-tighter text-slate-800 leading-none">VDC<span class="text-blue-600">.CRM</span></h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Safety Cloud Sync</p>
                 </div>
+                <span class="text-[10px] bg-blue-600 text-white px-3 py-1 rounded-full font-black shadow-lg">V7.3</span>
+            </div>
 
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase">Mã số thuế & Công ty</label>
-                    <input type="text" id="inputMST" placeholder="Tự động lấy từ Excel..." class="w-full text-xs font-bold bg-transparent border-none focus:ring-0 mb-2">
-                    <input type="text" id="inputTenCty" placeholder="Tên công ty..." class="w-full text-[11px] text-slate-500 bg-transparent border-none focus:ring-0 italic">
-                </div>
-
-                <button id="btnPreview" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs">
-                    <i class="fa-solid fa-magnifying-glass mr-2"></i> TRÍCH XUẤT DỮ LIỆU
-                </button>
-
-                <div id="syncSection" class="hidden space-y-3 pt-4 border-t border-slate-100">
-                    <button id="btnSync" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-xl transition-all active:scale-95 text-xs">
-                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i> ĐẨY LÊN VDC CLOUD
-                    </button>
-                    
-                    <div class="progress-container bg-slate-100 rounded-full h-2 overflow-hidden hidden" id="pContainer">
-                        <div id="progressFill" class="progress-fill h-full bg-emerald-500 w-0"></div>
+            <div class="space-y-8 flex-1">
+                <div class="space-y-3">
+                    <label class="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase px-1">
+                        <i class="fa-solid fa-file-excel text-blue-500"></i> Nguồn dữ liệu Excel
+                    </label>
+                    <div class="file-drop-area group">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 group-hover:text-blue-500 mb-3 transition-colors"></i>
+                        <p class="text-xs font-bold text-slate-600">Chọn file .xlsx</p>
+                        <input type="file" id="fileExcel" accept=".xlsx">
                     </div>
-                    
-                    <div id="status" class="text-[10px] font-bold text-center text-blue-500 uppercase"></div>
-                    
-                    <div id="liveBox" class="hidden mt-4 p-3 bg-white border border-emerald-100 rounded-xl shadow-sm text-center animate-pulse">
-                        <img id="liveImg" class="w-24 h-32 object-cover mx-auto rounded-lg border-2 border-white shadow-md">
-                        <p id="liveName" class="text-[10px] font-black text-emerald-600 mt-2 uppercase"></p>
+                    <p id="fileNameShow" class="text-[10px] text-blue-600 font-bold text-center truncate"></p>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="flex items-center gap-2 text-[11px] font-black text-slate-500 uppercase px-1">
+                        <i class="fa-solid fa-building text-blue-500"></i> Xác nhận đơn vị
+                    </label>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
+                        <input type="text" id="inputMST" placeholder="Mã số thuế" class="w-full text-xs font-black text-slate-800 bg-transparent border-none focus:ring-0">
+                        <input type="text" id="inputTenCty" placeholder="Tên đơn vị công ty" class="w-full text-xs font-bold text-blue-600 bg-transparent border-t border-slate-100 pt-3 focus:ring-0 italic">
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button id="btnPreview" class="w-full bg-slate-800 hover:bg-black text-white font-black py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span class="text-xs uppercase tracking-widest">Trích xuất dữ liệu</span>
+                    </button>
+
+                    <div id="syncSection" class="hidden space-y-4 pt-4 border-t border-slate-100 animate-fade-in">
+                        <button id="btnSync" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-bolt animate-pulse"></i>
+                            <span class="text-xs uppercase tracking-widest">Bắt đầu đồng bộ Cloud</span>
+                        </button>
+                        
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-[10px] font-black text-slate-400">
+                                <span id="statusText">Sẵn sàng...</span>
+                                <span id="percentText">0%</span>
+                            </div>
+                            <div class="bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                <div id="progressFill" class="h-full bg-blue-600 transition-all w-0"></div>
+                            </div>
+                        </div>
+
+                        <div id="liveBox" class="hidden bg-white p-4 rounded-2xl border-2 border-blue-50 shadow-lg text-center">
+                            <img id="liveImg" class="w-20 h-28 object-cover rounded-xl border-4 border-white shadow-md mx-auto">
+                            <p id="liveName" class="text-[10px] font-black text-slate-800 mt-3 uppercase"></p>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="pt-4 text-[9px] text-slate-300 text-center font-bold">VDC SAFETY TRAINING SYSTEM</div>
         </div>
 
-        <div class="flex-1 p-6 flex flex-col">
-            <div class="table-container bg-white rounded-2xl shadow-sm border border-slate-200">
-                <table id="hocVienTable" class="w-full text-left text-[12px]">
-                    <thead>
-                        <tr class="text-[10px] font-black uppercase text-slate-400">
-                            <th class="p-4">STT</th>
-                            <th class="p-4">Ảnh</th>
-                            <th class="p-4">Họ và Tên</th>
-                            <th class="p-4">CCCD</th>
-                            <th class="p-4">Nhóm/Đơn vị</th>
-                            <th class="p-4">Trạng thái Cloud</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        <tr><td colspan="6" class="p-10 text-center text-slate-300 italic">Vui lòng nạp file Excel để bắt đầu...</td></tr>
-                    </tbody>
-                </table>
+        <div class="flex-1 p-8 flex flex-col">
+            <div class="flex justify-between items-end mb-6 px-4">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight text-uppercase">Danh sách học viên</h3>
+                    <p class="text-xs text-slate-400 font-medium">Hệ thống trích xuất dữ liệu từ file Excel VDC</p>
+                </div>
+                <div class="bg-white px-5 py-2 rounded-xl shadow-sm border border-slate-100">
+                    <p class="text-[9px] font-black text-slate-400 uppercase">Học viên</p>
+                    <p id="countAll" class="text-sm font-black text-blue-600">0</p>
+                </div>
+            </div>
+
+            <div class="main-table-wrapper">
+                <div class="table-scroll">
+                    <table id="hocVienTable">
+                        <thead>
+                            <tr>
+                                <th class="w-16">STT</th>
+                                <th class="w-24">Ảnh</th>
+                                <th>Họ và Tên</th>
+                                <th>CCCD</th>
+                                <th>Nhóm/Đơn vị</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="emptyRow">
+                                <td colspan="6" class="p-20 text-center opacity-20">
+                                    <i class="fa-solid fa-folder-open text-6xl mb-4 block"></i>
+                                    <p class="text-sm font-black uppercase">Chưa có dữ liệu</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -84,31 +167,28 @@
     <script type="module">
         import { db, ref, set } from '../js/firebase-config.js';
 
-        // LINK WEB APP v6.9 IM LẶNG CỦA BẠN
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxKY8mO5USmDe3DyiYPNLpt0x64l8YN_Z_4TgoEdUs1F0Nw_pnjZd1XU6V2lL_Wl_lS/exec";
-
         let hocVienList = [];
 
-        // 1. Trích xuất Excel
-        async function handlePreview() {
+        // 1. TRÍCH XUẤT DỮ LIỆU
+        document.getElementById('btnPreview').onclick = async () => {
             const file = document.getElementById('fileExcel').files[0];
-            if (!file) return alert("Chưa chọn file!");
+            if (!file) return alert("Vui lòng chọn file Excel!");
 
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT EXCEL...";
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT...";
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await file.arrayBuffer());
             const sheet = workbook.getWorksheet(1);
 
-            // Lấy ảnh từ Excel
+            // Lấy MST & Tên Cty
+            document.getElementById('inputTenCty').value = sheet.getCell('A3').text.replace(/Công ty[:\s]*/gi, "");
+            document.getElementById('inputMST').value = sheet.getCell('A4').text.match(/[0-9]+/)?.[0] || "";
+
             const imageMap = {};
             sheet.getImages().forEach(img => {
                 const row = img.range.tl.nativeRow + 1;
                 imageMap[row] = workbook.getImage(img.imageId).buffer;
             });
-
-            // Lấy MST và Tên Cty (Giả định vị trí chuẩn của VDC)
-            document.getElementById('inputTenCty').value = sheet.getCell('A3').text.replace(/Công ty[:\s]*/gi, "");
-            document.getElementById('inputMST').value = sheet.getCell('A4').text.match(/[0-9]+/)?.[0] || "";
 
             hocVienList = [];
             sheet.eachRow((row, rowNum) => {
@@ -117,12 +197,9 @@
                     hocVienList.push({
                         stt: stt,
                         hoten: row.getCell(2).text,
-                        ngaysinh: row.getCell(4).text,
                         cccd: row.getCell(7).text,
-                        gioitinh: row.getCell(3).text,
                         donvi: row.getCell(5).text || "VDC",
-                        photo: imageMap[rowNum] || null,
-                        rowIdx: rowNum
+                        photo: imageMap[rowNum] || null
                     });
                 }
             });
@@ -130,41 +207,40 @@
             renderTable();
             document.getElementById('syncSection').classList.remove('hidden');
             document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
-        }
+            document.getElementById('countAll').innerText = hocVienList.length;
+        };
 
         function renderTable() {
             const tbody = document.querySelector("#hocVienTable tbody");
             tbody.innerHTML = hocVienList.map(h => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-4 font-bold text-slate-400">${h.stt}</td>
-                    <td class="p-4">${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="w-10 h-14 object-cover rounded shadow-sm border border-white">` : '❌'}</td>
-                    <td class="p-4 font-bold text-slate-700">${h.hoten}</td>
-                    <td class="p-4 text-slate-500 font-mono">${h.cccd}</td>
-                    <td class="p-4 text-slate-500 text-[11px]">${h.donvi}</td>
-                    <td class="p-4" id="status-${h.cccd}"><span class="text-slate-300 italic">Chờ đồng bộ...</span></td>
+                <tr class="row-card">
+                    <td>${h.stt}</td>
+                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="avatar-frame">` : '❌'}</td>
+                    <td class="font-bold text-slate-700">${h.hoten}</td>
+                    <td class="font-mono text-slate-500">${h.cccd}</td>
+                    <td class="text-slate-400 text-[11px] font-bold uppercase">${h.donvi}</td>
+                    <td id="status-${h.cccd}" class="text-blue-300 italic text-[10px]">Chờ đồng bộ</td>
                 </tr>
             `).join('');
         }
 
-        // 2. Đồng bộ Drive & Firebase
-        async function handleSync() {
+        // 2. ĐỒNG BỘ CLOUD (Drive & Firebase)
+        document.getElementById('btnSync').onclick = async () => {
             const mst = document.getElementById('inputMST').value;
             const tenCty = document.getElementById('inputTenCty').value;
             if (!mst) return alert("Thiếu Mã số thuế!");
 
             document.getElementById('btnSync').disabled = true;
-            document.getElementById('pContainer').classList.remove('hidden');
             document.getElementById('liveBox').classList.remove('hidden');
 
             for (let i = 0; i < hocVienList.length; i++) {
                 const hv = hocVienList[i];
-                const progress = Math.round(((i + 1) / hocVienList.length) * 100);
-                document.getElementById('progressFill').style.width = progress + "%";
-                document.getElementById('status').innerText = `ĐANG XỬ LÝ: ${hv.hoten}`;
+                const pct = Math.round(((i + 1) / hocVienList.length) * 100);
+                document.getElementById('progressFill').style.width = pct + "%";
+                document.getElementById('percentText').innerText = pct + "%";
+                document.getElementById('statusText').innerText = `Sync: ${hv.hoten}`;
 
-                let finalDriveUrl = "";
-
-                // TẢI ẢNH LÊN DRIVE (TỐC ĐỘ CAO)
+                let driveUrl = "";
                 if (hv.photo) {
                     const base64 = btoa(new Uint8Array(hv.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
                     try {
@@ -174,32 +250,27 @@
                         });
                         const resJson = await res.json();
                         if (resJson.status === "success") {
-                            finalDriveUrl = resJson.fileUrl;
-                            document.getElementById(`status-${hv.cccd}`).innerHTML = `<span class="text-emerald-500 font-bold">✅ DRIVE OK</span>`;
-                            document.getElementById('liveImg').src = finalDriveUrl;
+                            driveUrl = resJson.fileUrl;
+                            document.getElementById(`status-${hv.cccd}`).innerHTML = `<span class="text-emerald-500 font-black tracking-tighter uppercase text-[9px]">✅ Drive OK</span>`;
+                            document.getElementById('liveImg').src = driveUrl;
                             document.getElementById('liveName').innerText = hv.hoten;
                         }
-                    } catch (e) {
-                        console.error("Lỗi Drive: ", e);
-                        document.getElementById(`status-${hv.cccd}`).innerHTML = `<span class="text-red-400 italic">Lỗi Drive</span>`;
-                    }
+                    } catch (e) { console.error(e); }
                 }
 
-                // GHI DỮ LIỆU LÊN FIREBASE
+                // Ghi Firebase
                 await set(ref(db, `HocVien/${mst}/${hv.cccd}`), {
-                    ...hv,
-                    PhotoUrl: finalDriveUrl,
-                    photo: null, // Không lưu buffer ảnh gốc vào Firebase để nhẹ database
-                    NgayCapNhat: new Date().toISOString()
+                    ...hv, PhotoUrl: driveUrl, photo: null, NgaySync: new Date().toLocaleString('vi-VN')
                 });
             }
 
-            document.getElementById('status').innerText = "🚀 TẤT CẢ ĐÃ LÊN CLOUD!";
-            document.getElementById('liveBox').classList.remove('animate-pulse');
-        }
+            document.getElementById('statusText').innerText = "HOÀN TẤT ĐỒNG BỘ!";
+            alert("🚀 Hệ thống VDC đã đồng bộ thành công tất cả học viên!");
+        };
 
-        document.getElementById('btnPreview').onclick = handlePreview;
-        document.getElementById('btnSync').onclick = handleSync;
+        document.getElementById('fileExcel').onchange = (e) => {
+            document.getElementById('fileNameShow').innerText = "📁 " + e.target.files[0].name;
+        };
     </script>
 </body>
 </html>
