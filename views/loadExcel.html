@@ -2,105 +2,97 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC CRM - Smart Sync v8.9</title>
+    <title>VDC CRM - Smart Load v9.0</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ĐỒNG BỘ MÀU SẮC VÀ FONT VỚI PRINTDOC */
-        body { background: #f1f5f9; color: #000; font-weight: 700; font-size: 14px; margin: 0; }
-        
-        /* Layout Grid giống PrintDoc */
+        body { background: #f1f5f9; color: #000; font-weight: 700; }
         .main-panel { 
-            background: white; max-width: 1400px; margin: 20px auto; padding: 25px; 
+            background: white; max-width: 1250px; margin: 20px auto; padding: 25px; 
             border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
-            display: grid; grid-template-columns: 380px 1fr; gap: 25px; 
-            border: 2px solid #e2e8f0; height: calc(100vh - 40px);
+            display: grid; grid-template-columns: 400px 1fr; gap: 25px; border: 2px solid #e2e8f0;
         }
-
-        .controls { border-right: 2px solid #f1f5f9; padding-right: 10px; overflow-y: auto; }
         .control-group { margin-bottom: 20px; padding: 20px; border-radius: 15px; border: 2px solid #cbd5e1; background: #fff; }
-        
         label { font-weight: 900; display: block; margin-bottom: 8px; color: #1e293b; font-size: 11px; text-transform: uppercase; }
-        select, input { width: 100%; padding: 12px; border: 2px solid #94a3b8; border-radius: 10px; font-weight: 800; font-size: 13px; outline: none; transition: 0.3s; }
-        select:focus, input:focus { border-color: #2563eb; background: #f8faff; }
-
-        /* Button Style đồng bộ */
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .btn-preview { background: #1e293b; color: white; }
-        .btn-sync { background: #059669; color: white; box-shadow: 0 4px 15px rgba(5,150,105,0.3); }
-        .btn:active { transform: scale(0.97); }
-
-        /* Bảng hiển thị rộng rãi */
-        .table-wrapper { background: #fff; border: 2px solid #cbd5e1; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; height: 100%; }
-        .scroll-area { flex: 1; overflow: auto; padding: 0 15px 15px 15px; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #94a3b8; border-radius: 10px; font-weight: 800; font-size: 14px; outline: none; }
         
+        /* Buttons */
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 13px; text-transform: uppercase; }
+        .btn-preview { background: #1e293b; color: white; }
+        .btn-sync { background: #059669; color: white; font-size: 16px; margin-top: 20px; padding: 20px; box-shadow: 0 10px 20px rgba(5,150,105,0.2); }
+        
+        /* Table Style */
         table { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
-        th { background: #1e293b; color: white; padding: 15px; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; z-index: 20; }
-        td { padding: 12px; background: #fcfdfe; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; text-align: center; color: #000; font-size: 13px; }
+        th { background: #1e293b; color: white; padding: 15px; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; z-index: 10; }
+        td { padding: 12px; background: #fcfdfe; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; text-align: center; font-size: 14px; }
+        .img-hv { width: 45px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid #1e293b; margin: 0 auto; }
 
-        /* Progress Bar giống PrintDoc */
+        /* Progress */
         .progress-container { width: 100%; background: #e2e8f0; height: 12px; border-radius: 10px; margin-top: 15px; overflow: hidden; display: none; border: 1px solid #cbd5e1; }
         .progress-fill { height: 100%; width: 0%; background: #059669; transition: width 0.3s; }
 
-        .img-hv { width: 45px; height: 60px; border-radius: 6px; object-fit: cover; border: 2px solid #1e293b; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .demo-img { width: 100%; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <div class="main-panel">
-    <div class="controls pr-4">
+    <div class="controls">
         <div class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg"><i class="fa-solid fa-file-import"></i></div>
-            <h1 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Nạp Dữ Liệu <span class="text-blue-600">VDC</span></h1>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Nạp Dữ Liệu VDC</h1>
         </div>
 
         <div class="control-group">
-            <label>1. Loại mẫu Excel:</label>
-            <select id="templateType">
-                <option value="excel_img" selected>Mẫu TTHV (Ảnh trong Excel)</option>
-                <option value="zip_img">Mẫu Long Phương (Ảnh ZIP)</option>
+            <label>1. Chọn kiểu File Excel:</label>
+            <select id="templateType" onchange="changeTemplate()">
+                <option value="excel_img">Mẫu 1: Có chèn hình sẵn</option>
+                <option value="zip_img">Mẫu 2: Không hình (Kèm ZIP)</option>
             </select>
         </div>
 
         <div class="control-group" style="background: #f8fafc;">
-            <label><i class="fa-solid fa-file-excel mr-2 text-green-600"></i>Chọn tệp dữ liệu</label>
+            <label>2. Nạp tệp tin:</label>
             <input type="file" id="fileExcel" accept=".xlsx" class="mb-3 text-[10px]">
-            <div id="zipGroup" class="hidden mt-2 border-t pt-3">
-                <label><i class="fa-solid fa-file-zipper mr-2 text-amber-500"></i>Chọn file ZIP ảnh</label>
+            <div id="zipGroup" class="hidden mt-2 pt-3 border-t-2 border-slate-100">
+                <label>File ZIP hình ảnh:</label>
                 <input type="file" id="fileZip" accept=".zip" class="text-[10px]">
             </div>
-            <button class="btn btn-preview mt-4" id="btnPreview">🔍 TRÍCH XUẤT HỌC VIÊN</button>
+            <button class="btn btn-preview mt-4" id="btnPreview">🚀 TRÍCH XUẤT THÔNG TIN</button>
         </div>
 
-        <div class="control-group" style="background: #eff6ff; border-color: #dbeafe;">
-            <label>Thông tin định danh trích xuất:</label>
-            <input type="text" id="inputMST" placeholder="Mã số thuế..." class="mb-3">
-            <input type="text" id="inputTenCty" placeholder="Tên đơn vị..." class="mb-3">
-            <input type="text" id="inputDiaChi" placeholder="Địa chỉ..." class="italic !text-slate-500 !font-medium">
-        </div>
-
-        <div id="syncSection" class="hidden">
-            <button class="btn btn-sync" id="btnSync">🚀 ĐẨY LÊN VDC CLOUD (FIREBASE)</button>
-            <div class="progress-container" id="pContainer"><div class="progress-fill" id="pFill"></div></div>
-            <div id="status" class="text-center font-black text-blue-700 text-[10px] mt-2 uppercase italic"></div>
+        <div id="infoSection" class="hidden animate-fade-in">
+            <div class="control-group" style="background: #eff6ff; border-color: #bfdbfe;">
+                <label>Đơn vị huấn luyện:</label>
+                <input type="text" id="inputTenCty" class="mb-3 bg-white" placeholder="Tên công ty...">
+                <input type="text" id="inputMST" class="mb-3 bg-white" placeholder="Mã số thuế...">
+                <input type="text" id="inputDiaChi" class="bg-white italic !text-slate-500 font-medium" placeholder="Địa chỉ...">
+            </div>
+            <div id="status" class="text-center font-black text-blue-700 text-[10px] uppercase italic mb-2"></div>
+            <div class="progress-container mb-4" id="pContainer"><div class="progress-fill" id="pFill"></div></div>
         </div>
     </div>
 
-    <div class="flex flex-col overflow-hidden">
-        <div class="flex justify-between items-end mb-4">
-            <div>
-                <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Bản xem trước dữ liệu</h2>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Kiểm tra thông tin & ảnh trước khi đồng bộ</p>
+    <div class="right-content">
+        <div id="demoArea" class="text-center p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+            <label class="mb-4">HÌNH ẢNH MẪU FILE EXCEL TƯƠNG ỨNG</label>
+            <div id="demoContent" class="flex justify-center p-4">
+                <img id="imgTemplate" src="./img/mau1_excel.png" class="demo-img" alt="Mẫu 1">
             </div>
-            <div class="bg-slate-900 text-white px-5 py-2 rounded-xl font-black text-lg shadow-lg">
-                <span id="count">00</span> <span class="text-[10px] uppercase ml-1">Người</span>
-            </div>
+            <p id="demoDesc" class="text-[10px] font-black text-slate-400 mt-4 uppercase">Mẫu 1: Hình ảnh học viên nằm tại cột H</p>
         </div>
 
-        <div class="table-wrapper">
-            <div class="scroll-area">
+        <div id="previewSection" class="hidden flex flex-col h-full animate-fade-in">
+            <div class="flex justify-between items-end mb-4 px-2">
+                <h3 class="text-lg font-black text-slate-800 uppercase tracking-tighter">Danh sách học viên sẵn sàng đồng bộ:</h3>
+                <div class="bg-slate-900 text-white px-5 py-1 rounded-full font-black text-sm shadow-md">
+                    <span id="count">00</span> HV
+                </div>
+            </div>
+            
+            <div class="overflow-auto border-2 border-slate-100 rounded-2xl shadow-inner max-h-[600px]">
                 <table id="vdcTable">
                     <thead>
                         <tr>
@@ -108,15 +100,15 @@
                             <th class="w-24">Ảnh</th>
                             <th>Họ và Tên</th>
                             <th>Ngày sinh</th>
-                            <th>CCCD</th>
-                            <th>Đơn vị / Nhóm</th>
-                            <th class="text-right">Trạng thái</th>
+                            <th>CCCD / Định danh</th>
+                            <th>Chức vụ / Nhóm</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
+
+            <button class="btn btn-sync shadow-2xl" id="btnSync">🚀 BẮT ĐẦU ĐỒNG BỘ LÊN VDC CLOUD</button>
         </div>
     </div>
 </div>
@@ -127,6 +119,25 @@
 
     let globalHocVien = [];
 
+    // 1. CHUYỂN ĐỔI HÌNH MẪU KHI CHỌN LOẠI FILE
+    window.changeTemplate = function() {
+        const type = document.getElementById('templateType').value;
+        const img = document.getElementById('imgTemplate');
+        const desc = document.getElementById('demoDesc');
+        const zip = document.getElementById('zipGroup');
+
+        if(type === 'excel_img') {
+            img.src = "./img/mau1_excel.png"; // Hãy đảm bảo bạn có file này
+            desc.innerText = "Mẫu 1: Hình ảnh học viên nằm trực tiếp tại cột H";
+            zip.classList.add('hidden');
+        } else {
+            img.src = "./img/mau2_excel.png"; // Hãy đảm bảo bạn có file này
+            desc.innerText = "Mẫu 2: Không hình trong Excel, phải chọn thêm file ZIP ảnh";
+            zip.classList.remove('hidden');
+        }
+    }
+
+    // Logic lấy dữ liệu an toàn (Bản v8.3)
     const getSafeVal = (sheet, addr) => {
         try {
             const cell = sheet.getCell(addr);
@@ -146,39 +157,32 @@
 
     const superClean = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "") : "";
 
-    document.getElementById('templateType').onchange = (e) => {
-        document.getElementById('zipGroup').classList.toggle('hidden', e.target.value !== 'zip_img');
-    };
-
+    // 2. XỬ LÝ TRÍCH XUẤT (KHI BẤM NÚT)
     document.getElementById('btnPreview').onclick = async () => {
-        const type = document.getElementById('templateType').value;
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
+        const type = document.getElementById('templateType').value;
         if (!fileEx) return alert("Chọn file Excel!");
         
         try {
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT...";
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await fileEx.arrayBuffer());
             const sheet = workbook.worksheets[0];
 
+            // Tự động tách thông tin công ty
             if (type === 'excel_img') {
-                document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "").trim();
-                document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "").trim();
+                document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
+                document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
             } else {
                 const rawA1 = getSafeVal(sheet, 'A1');
-                if (rawA1.includes('\n')) {
-                    const lines = rawA1.split('\n');
-                    document.getElementById('inputTenCty').value = lines[0].trim();
-                    document.getElementById('inputDiaChi').value = lines[1].trim();
-                } else {
-                    document.getElementById('inputTenCty').value = rawA1.trim();
-                }
-                const rawA8 = getSafeVal(sheet, 'A8');
-                const mstMatch = rawA8.match(/[0-9]{10,}/);
-                if (mstMatch) document.getElementById('inputMST').value = mstMatch[0];
+                const lines = rawA1.split('\n');
+                document.getElementById('inputTenCty').value = lines[0].trim();
+                document.getElementById('inputDiaChi').value = lines[1] ? lines[1].trim() : "";
+                const mstMatch = getSafeVal(sheet, 'A8').match(/[0-9]{10,}/);
+                document.getElementById('inputMST').value = mstMatch ? mstMatch[0] : "";
             }
 
+            // Bóc ảnh
             const anhExcel = {};
             sheet.getImages().forEach(img => {
                 if (img.range.tl.nativeCol >= 7) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer;
@@ -204,33 +208,38 @@
                         hoten: hoten,
                         ngaysinh: (type === 'excel_img') ? getSafeVal(sheet, `D${i}`) : getSafeVal(sheet, `F${i}`),
                         cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
-                        congviec: (type === 'excel_img') ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
                         donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
-                        tenCty: document.getElementById('inputTenCty').value,
                         photo: anhExcel[i-1] || anhZip[superClean(hoten)] || null
                     });
                 }
             });
 
-            const tbody = document.querySelector("#vdcTable tbody");
-            tbody.innerHTML = globalHocVien.map(h => `
-                <tr>
-                    <td class="font-black text-slate-400">${h.stt}</td>
-                    <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="img-hv">` : '<span class="text-red-500">❌</span>'}</td>
-                    <td class="font-black text-slate-900 uppercase">${h.hoten}</td>
-                    <td class="font-bold">${h.ngaysinh}</td>
-                    <td class="text-blue-700 font-black">${h.cccd}</td>
-                    <td class="text-[10px] font-black uppercase text-slate-400">${h.donvi}</td>
-                    <td id="stt-${h.cccd}" class="font-black italic text-slate-300 text-[10px]">CHỜ SYNC</td>
-                </tr>
-            `).join('');
-
-            document.getElementById('syncSection').classList.remove('hidden');
+            // GIAO DIỆN CHUYỂN ĐỔI: Ẩn demo, Hiện bảng & Info
+            document.getElementById('demoArea').classList.add('hidden');
+            document.getElementById('infoSection').classList.remove('hidden');
+            document.getElementById('previewSection').classList.remove('hidden');
+            
+            renderTable();
             document.getElementById('count').innerText = globalHocVien.length;
-            document.getElementById('btnPreview').innerText = "🔍 QUÉT LẠI";
+
         } catch (e) { alert("Lỗi: " + e.message); }
     };
 
+    function renderTable() {
+        const tbody = document.querySelector("#vdcTable tbody");
+        tbody.innerHTML = globalHocVien.map(h => `
+            <tr>
+                <td class="font-black text-slate-400">${h.stt}</td>
+                <td>${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="img-hv">` : '❌'}</td>
+                <td class="font-black text-slate-900 uppercase text-left pl-6">${h.hoten}</td>
+                <td class="font-bold">${h.ngaysinh}</td>
+                <td class="text-blue-700 font-black">${h.cccd}</td>
+                <td class="text-[10px] font-black uppercase text-slate-400">${h.donvi}</td>
+            </tr>
+        `).join('');
+    }
+
+    // 3. ĐỒNG BỘ CLOUD (FIREBASE & DRIVE)
     document.getElementById('btnSync').onclick = async () => {
         const mst = document.getElementById('inputMST').value;
         const ten = document.getElementById('inputTenCty').value;
@@ -238,7 +247,7 @@
         const pContainer = document.getElementById('pContainer');
         const status = document.getElementById('status');
 
-        if(!mst) return alert("Nhập MST!");
+        if(!mst) return alert("Vui lòng xác nhận MST!");
         document.getElementById('btnSync').disabled = true;
         pContainer.style.display = 'block';
 
@@ -246,7 +255,7 @@
             const h = globalHocVien[i];
             const pct = Math.round(((i + 1) / globalHocVien.length) * 100);
             pFill.style.width = pct + "%";
-            status.innerText = `Sync: ${h.hoten}`;
+            status.innerText = `Đang tải: ${h.hoten} (${pct}%)`;
 
             let url = "";
             if (h.photo) {
@@ -254,16 +263,14 @@
                 try {
                     const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type:"upload", mst, tenCty:ten, cccd:h.cccd, base64:b64 }) });
                     const json = await res.json();
-                    if(json.status === "success") {
-                        url = json.fileUrl;
-                        document.getElementById(`stt-${h.cccd}`).innerHTML = `<span class="text-emerald-600 font-black">✅ DRIVE OK</span>`;
-                    }
+                    if(json.status === "success") url = json.fileUrl;
                 } catch(e) {}
             }
             const { photo, ...clean } = h;
             await set(ref(db, `HocVien/${mst}/${h.cccd}`), { ...clean, PhotoUrl: url, NgayUpdate: new Date().toLocaleString() });
         }
         status.innerText = "✅ ĐỒNG BỘ HOÀN TẤT!";
+        alert("Dữ liệu VDC đã được Cloud hóa thành công!");
     };
 </script>
 </body>
