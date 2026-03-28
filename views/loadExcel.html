@@ -2,216 +2,204 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Thông tin học viên v6.5</title>
+    <title>VDC - Load Excel v7.2</title>
     <script src="../js/exceljs.min.js"></script>
-    <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: #fff; overflow: hidden; }
-        .sidebar-in { width: 310px; background: #f8fafc; border-right: 1px solid #e2e8f0; padding: 15px; overflow-y: auto; flex-shrink: 0; }
-        .main-content { flex: 1; padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 12px; color: #64748b; }
-        input, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box; }
-        .table-container { flex: 1; border: 1px solid #e2e8f0; border-radius: 4px; overflow: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1600px; }
-        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #e2e8f0; z-index: 10; }
-        td { padding: 6px; border: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; transition: 0.2s; }
-        .btn-preview { background: #2563eb; }
-        .btn-sync { background: #10b981; display: none; }
-        .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; margin-top: 10px; display: none; overflow: hidden; }
-        #progressFill { height: 100%; width: 0%; background: #10b981; transition: width 0.3s; }
-        #status { margin-top: 8px; font-size: 12px; text-align: center; color: #3b82f6; font-weight: 600; }
-        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
-        #live-preview-box { margin-top: 15px; text-align: center; display: none; border: 2px dashed #10b981; padding: 10px; border-radius: 8px; background: #f0fdf4; }
-        #live-img { width: 90px; height: 120px; object-fit: cover; border-radius: 4px; border: 2px solid #fff; margin: auto; }
+        .table-container { height: calc(100vh - 250px); overflow: auto; }
+        table { min-width: 1200px; border-collapse: separate; border-spacing: 0; }
+        th { position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0; }
+        .progress-fill { transition: width 0.4s ease-in-out; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 font-sans text-slate-800">
 
-<div class="sidebar-in">
-    <div class="form-group">
-        <label>LOẠI FILE & ẢNH:</label>
-        <select id="templateType">
-            <option value="excel_img" selected>1. Mẫu TTHV (Ảnh trong Excel)</option>
-            <option value="zip_img">2. Mẫu Long Phương (Ảnh trong ZIP)</option>
-        </select>
-    </div>
-    
-    <div class="form-group"><label>FILE EXCEL (.xlsx):</label><input type="file" id="fileExcel" accept=".xlsx"></div>
-    <div class="form-group" id="zipGroup" style="display:none;"><label>FILE ZIP HÌNH ẢNH:</label><input type="file" id="fileZip" accept=".zip"></div>
+    <div class="flex h-screen overflow-hidden">
+        <div class="w-80 bg-white border-right border-slate-200 p-6 flex flex-col shadow-xl z-20">
+            <div class="mb-8 text-center">
+                <h1 class="text-xl font-black tracking-tighter text-blue-600">VDC CRM <span class="text-[10px] bg-blue-100 px-2 py-0.5 rounded text-blue-500">v7.2</span></h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Đồng bộ Cloud Học Viên</p>
+            </div>
 
-    <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-        <label>MÃ SỐ THUẾ:</label>
-        <input type="text" id="inputMST" placeholder="MST tự động...">
-        <label style="margin-top:8px;">TÊN CÔNG TY:</label>
-        <input type="text" id="inputTenCty" placeholder="Tên cty tự động...">
-    </div>
+            <div class="space-y-4 flex-1">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase">1. Chọn File Excel học viên</label>
+                    <input type="file" id="fileExcel" accept=".xlsx" class="w-full text-xs border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
 
-    <button class="btn btn-preview" id="btnPreview">🔍 TRÍCH XUẤT DỮ LIỆU</button>
-    
-    <div id="syncSection" style="display:none;">
-        <button id="btnSync" class="btn btn-sync">🚀 ĐỒNG BỘ VDC CLOUD</button>
-        <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
-        <div id="live-preview-box">
-            <img id="live-img" src="">
-            <p id="live-name" style="font-size:11px; font-weight:bold; color:#15803d; margin-top:5px;"></p>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase">Mã số thuế & Công ty</label>
+                    <input type="text" id="inputMST" placeholder="Tự động lấy từ Excel..." class="w-full text-xs font-bold bg-transparent border-none focus:ring-0 mb-2">
+                    <input type="text" id="inputTenCty" placeholder="Tên công ty..." class="w-full text-[11px] text-slate-500 bg-transparent border-none focus:ring-0 italic">
+                </div>
+
+                <button id="btnPreview" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> TRÍCH XUẤT DỮ LIỆU
+                </button>
+
+                <div id="syncSection" class="hidden space-y-3 pt-4 border-t border-slate-100">
+                    <button id="btnSync" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-xl transition-all active:scale-95 text-xs">
+                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i> ĐẨY LÊN VDC CLOUD
+                    </button>
+                    
+                    <div class="progress-container bg-slate-100 rounded-full h-2 overflow-hidden hidden" id="pContainer">
+                        <div id="progressFill" class="progress-fill h-full bg-emerald-500 w-0"></div>
+                    </div>
+                    
+                    <div id="status" class="text-[10px] font-bold text-center text-blue-500 uppercase"></div>
+                    
+                    <div id="liveBox" class="hidden mt-4 p-3 bg-white border border-emerald-100 rounded-xl shadow-sm text-center animate-pulse">
+                        <img id="liveImg" class="w-24 h-32 object-cover mx-auto rounded-lg border-2 border-white shadow-md">
+                        <p id="liveName" class="text-[10px] font-black text-emerald-600 mt-2 uppercase"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 text-[9px] text-slate-300 text-center font-bold">VDC SAFETY TRAINING SYSTEM</div>
         </div>
-        <div id="status"></div>
+
+        <div class="flex-1 p-6 flex flex-col">
+            <div class="table-container bg-white rounded-2xl shadow-sm border border-slate-200">
+                <table id="hocVienTable" class="w-full text-left text-[12px]">
+                    <thead>
+                        <tr class="text-[10px] font-black uppercase text-slate-400">
+                            <th class="p-4">STT</th>
+                            <th class="p-4">Ảnh</th>
+                            <th class="p-4">Họ và Tên</th>
+                            <th class="p-4">CCCD</th>
+                            <th class="p-4">Nhóm/Đơn vị</th>
+                            <th class="p-4">Trạng thái Cloud</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <tr><td colspan="6" class="p-10 text-center text-slate-300 italic">Vui lòng nạp file Excel để bắt đầu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 20px;">v6.5 - WebApp Stable Link</p>
-</div>
 
-<div class="main-content">
-    <div class="table-container">
-        <table id="previewTable">
-            <thead>
-                <tr>
-                    <th>STT</th><th>Ảnh</th><th>Họ và Tên</th><th>Ngày sinh</th><th>Giới tính</th><th>CCCD</th><th>Chức vụ</th><th>Mã NV</th><th>Quốc tịch</th><th>NHÓM</th><th>NỘI DUNG HL</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
+    <script type="module">
+        import { db, ref, set } from '../js/firebase-config.js';
 
-<script type="module">
-    import { db, ref, set } from '../js/firebase-config.js';
-    
-    // LINK WEB APP MỚI NHẤT CỦA BẠN
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxYQW1o_VKQAhaJPJsUzXxR0AJD7Y7gR5tlMrcFKDGcgOGldUee66HtiwO37r2cuma3/exec";
+        // LINK WEB APP v6.9 IM LẶNG CỦA BẠN
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxKY8mO5USmDe3DyiYPNLpt0x64l8YN_Z_4TgoEdUs1F0Nw_pnjZd1XU6V2lL_Wl_lS/exec";
 
-    let globalDataHocVien = [];
+        let hocVienList = [];
 
-    const getSafeVal = (sheet, addr) => {
-        const cell = sheet.getCell(addr);
-        const target = cell.isMerged && cell.master ? cell.master : cell;
-        let val = target.value;
-        if (!val) return "";
-        if (typeof val === 'object') {
-            if (val.richText) return val.richText.map(t => t.text).join('').trim();
-            if (val.result !== undefined) return (val.result || "").toString().trim();
-            return "";
-        }
-        return val.toString().trim();
-    };
+        // 1. Trích xuất Excel
+        async function handlePreview() {
+            const file = document.getElementById('fileExcel').files[0];
+            if (!file) return alert("Chưa chọn file!");
 
-    const superClean = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "");
-
-    document.getElementById('templateType').onchange = (e) => {
-        document.getElementById('zipGroup').style.display = (e.target.value === 'zip_img') ? 'block' : 'none';
-    };
-
-    async function handlePreview() {
-        const type = document.getElementById('templateType').value;
-        const fileEx = document.getElementById('fileExcel').files[0];
-        const fileZi = document.getElementById('fileZip').files[0];
-        if (!fileEx) return alert("Vui lòng chọn file!");
-        
-        try {
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG PHÂN TÍCH...";
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT EXCEL...";
             const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(await fileEx.arrayBuffer());
-            const sheet = workbook.worksheets[0];
-            let data = [];
+            await workbook.xlsx.load(await file.arrayBuffer());
+            const sheet = workbook.getWorksheet(1);
 
-            // 1. Quét ảnh diện rộng (Cột H trở đi)
-            const anhExcel = {};
+            // Lấy ảnh từ Excel
+            const imageMap = {};
             sheet.getImages().forEach(img => {
-                const row = img.range.tl.nativeRow;
-                if (img.range.tl.nativeCol >= 7) anhExcel[row] = workbook.getImage(img.imageId).buffer;
+                const row = img.range.tl.nativeRow + 1;
+                imageMap[row] = workbook.getImage(img.imageId).buffer;
             });
 
-            // 2. Tên Công ty & MST
-            if (type === 'excel_img') {
-                document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
-                document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
-            } else {
-                const infoText = getSafeVal(sheet, 'A8');
-                document.getElementById('inputTenCty').value = infoText.split('\n')[0];
-                const mstMatch = infoText.match(/[0-9]{10,}/);
-                if (mstMatch) document.getElementById('inputMST').value = mstMatch[0];
-            }
+            // Lấy MST và Tên Cty (Giả định vị trí chuẩn của VDC)
+            document.getElementById('inputTenCty').value = sheet.getCell('A3').text.replace(/Công ty[:\s]*/gi, "");
+            document.getElementById('inputMST').value = sheet.getCell('A4').text.match(/[0-9]+/)?.[0] || "";
 
-            // 3. Xử lý nhân viên
-            sheet.eachRow((row, i) => {
-                const sttVal = row.getCell(1).text.trim();
-                if (i >= 10 && sttVal && !isNaN(sttVal)) {
-                    const hoten = (type === 'excel_img') ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
-                    data.push({
-                        stt: data.length+1,
-                        hoten: hoten,
-                        ngaysinh: (type === 'excel_img') ? row.getCell(4).text : row.getCell(6).text,
-                        cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
-                        manv: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `B${i}`),
-                        gioitinh: (type === 'excel_img') ? getSafeVal(sheet, `C${i}`) : getSafeVal(sheet, `G${i}`),
-                        quoctich: (type === 'excel_img') ? getSafeVal(sheet, `E${i}`) : getSafeVal(sheet, `H${i}`),
-                        congviec: (type === 'excel_img') ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
-                        donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
-                        noidung: (type === 'excel_img') ? getSafeVal(sheet, `H${i}`) : getSafeVal(sheet, `J${i}`),
-                        photo: anhExcel[i-1] || null
+            hocVienList = [];
+            sheet.eachRow((row, rowNum) => {
+                const stt = row.getCell(1).text;
+                if (rowNum >= 10 && stt && !isNaN(stt)) {
+                    hocVienList.push({
+                        stt: stt,
+                        hoten: row.getCell(2).text,
+                        ngaysinh: row.getCell(4).text,
+                        cccd: row.getCell(7).text,
+                        gioitinh: row.getCell(3).text,
+                        donvi: row.getCell(5).text || "VDC",
+                        photo: imageMap[rowNum] || null,
+                        rowIdx: rowNum
                     });
                 }
             });
 
-            globalDataHocVien = data;
-            renderTable(data);
-            document.getElementById('syncSection').style.display = 'block';
-            document.getElementById('btnSync').style.display = 'block';
+            renderTable();
+            document.getElementById('syncSection').classList.remove('hidden');
             document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
-        } catch (err) { alert("Lỗi: " + err.message); }
-    }
-
-    function renderTable(data) {
-        const tbody = document.querySelector("#previewTable tbody");
-        tbody.innerHTML = data.map(s => {
-            const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
-            return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
-        }).join('');
-    }
-
-    async function handleSync() {
-        const mst = document.getElementById('inputMST').value.trim();
-        const ten = document.getElementById('inputTenCty').value.trim();
-        if(!mst) return alert("Vui lòng nhập MST!");
-
-        document.getElementById('pBar').style.display = 'block';
-        document.getElementById('btnSync').style.display = 'none';
-        
-        for (let i = 0; i < globalDataHocVien.length; i++) {
-            const s = globalDataHocVien[i];
-            const pct = Math.round(((i + 1) / globalDataHocVien.length) * 100);
-            document.getElementById('progressFill').style.width = pct + "%";
-            document.getElementById('status').innerText = `Đang đồng bộ: ${s.hoten}`;
-
-            let driveUrl = "";
-            if (s.photo) {
-                const base64 = btoa(new Uint8Array(s.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
-                try {
-                    const res = await fetch(GAS_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) 
-                    });
-                    const resJson = await res.json();
-                    if (resJson.status === "success") {
-                        driveUrl = resJson.fileUrl;
-                        document.getElementById('live-preview-box').style.display = 'block';
-                        document.getElementById('live-img').src = driveUrl;
-                        document.getElementById('live-name').innerText = s.hoten;
-                    }
-                } catch(e) { console.error("Lỗi GAS: ", e); }
-            }
-            
-            await set(ref(db, `HocVien/${mst}/${s.cccd}`), { 
-                ...s, PhotoUrl: driveUrl, photo: null, NgayCapNhat: new Date().toISOString() 
-            });
         }
-        document.getElementById('status').innerText = "✅ ĐỒNG BỘ THÀNH CÔNG v6.5";
-    }
 
-    document.getElementById('btnPreview').onclick = handlePreview;
-    document.getElementById('btnSync').onclick = handleSync;
-</script>
+        function renderTable() {
+            const tbody = document.querySelector("#hocVienTable tbody");
+            tbody.innerHTML = hocVienList.map(h => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-4 font-bold text-slate-400">${h.stt}</td>
+                    <td class="p-4">${h.photo ? `<img src="${URL.createObjectURL(new Blob([h.photo]))}" class="w-10 h-14 object-cover rounded shadow-sm border border-white">` : '❌'}</td>
+                    <td class="p-4 font-bold text-slate-700">${h.hoten}</td>
+                    <td class="p-4 text-slate-500 font-mono">${h.cccd}</td>
+                    <td class="p-4 text-slate-500 text-[11px]">${h.donvi}</td>
+                    <td class="p-4" id="status-${h.cccd}"><span class="text-slate-300 italic">Chờ đồng bộ...</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // 2. Đồng bộ Drive & Firebase
+        async function handleSync() {
+            const mst = document.getElementById('inputMST').value;
+            const tenCty = document.getElementById('inputTenCty').value;
+            if (!mst) return alert("Thiếu Mã số thuế!");
+
+            document.getElementById('btnSync').disabled = true;
+            document.getElementById('pContainer').classList.remove('hidden');
+            document.getElementById('liveBox').classList.remove('hidden');
+
+            for (let i = 0; i < hocVienList.length; i++) {
+                const hv = hocVienList[i];
+                const progress = Math.round(((i + 1) / hocVienList.length) * 100);
+                document.getElementById('progressFill').style.width = progress + "%";
+                document.getElementById('status').innerText = `ĐANG XỬ LÝ: ${hv.hoten}`;
+
+                let finalDriveUrl = "";
+
+                // TẢI ẢNH LÊN DRIVE (TỐC ĐỘ CAO)
+                if (hv.photo) {
+                    const base64 = btoa(new Uint8Array(hv.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
+                    try {
+                        const res = await fetch(GAS_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({ type: "upload", mst: mst, tenCty: tenCty, cccd: hv.cccd, base64: base64 })
+                        });
+                        const resJson = await res.json();
+                        if (resJson.status === "success") {
+                            finalDriveUrl = resJson.fileUrl;
+                            document.getElementById(`status-${hv.cccd}`).innerHTML = `<span class="text-emerald-500 font-bold">✅ DRIVE OK</span>`;
+                            document.getElementById('liveImg').src = finalDriveUrl;
+                            document.getElementById('liveName').innerText = hv.hoten;
+                        }
+                    } catch (e) {
+                        console.error("Lỗi Drive: ", e);
+                        document.getElementById(`status-${hv.cccd}`).innerHTML = `<span class="text-red-400 italic">Lỗi Drive</span>`;
+                    }
+                }
+
+                // GHI DỮ LIỆU LÊN FIREBASE
+                await set(ref(db, `HocVien/${mst}/${hv.cccd}`), {
+                    ...hv,
+                    PhotoUrl: finalDriveUrl,
+                    photo: null, // Không lưu buffer ảnh gốc vào Firebase để nhẹ database
+                    NgayCapNhat: new Date().toISOString()
+                });
+            }
+
+            document.getElementById('status').innerText = "🚀 TẤT CẢ ĐÃ LÊN CLOUD!";
+            document.getElementById('liveBox').classList.remove('animate-pulse');
+        }
+
+        document.getElementById('btnPreview').onclick = handlePreview;
+        document.getElementById('btnSync').onclick = handleSync;
+    </script>
 </body>
 </html>
