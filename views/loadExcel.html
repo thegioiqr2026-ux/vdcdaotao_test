@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Thông tin học viên v6.2</title>
+    <title>VDC Thông tin học viên v6.5</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
@@ -15,15 +15,17 @@
         input, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 13px; box-sizing: border-box; }
         .table-container { flex: 1; border: 1px solid #e2e8f0; border-radius: 4px; overflow: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1600px; }
-        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; z-index: 10; }
-        td { padding: 6px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; }
+        th { background: #f1f5f9; color: #475569; position: sticky; top: 0; padding: 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #e2e8f0; z-index: 10; }
+        td { padding: 6px; border: 1px solid #f1f5f9; text-align: center; font-size: 12px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; transition: 0.2s; }
         .btn-preview { background: #2563eb; }
         .btn-sync { background: #10b981; display: none; }
         .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; margin-top: 10px; display: none; overflow: hidden; }
         #progressFill { height: 100%; width: 0%; background: #10b981; transition: width 0.3s; }
-        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
         #status { margin-top: 8px; font-size: 12px; text-align: center; color: #3b82f6; font-weight: 600; }
+        .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
+        #live-preview-box { margin-top: 15px; text-align: center; display: none; border: 2px dashed #10b981; padding: 10px; border-radius: 8px; background: #f0fdf4; }
+        #live-img { width: 90px; height: 120px; object-fit: cover; border-radius: 4px; border: 2px solid #fff; margin: auto; }
     </style>
 </head>
 <body>
@@ -52,9 +54,13 @@
     <div id="syncSection" style="display:none;">
         <button id="btnSync" class="btn btn-sync">🚀 ĐỒNG BỘ VDC CLOUD</button>
         <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
+        <div id="live-preview-box">
+            <img id="live-img" src="">
+            <p id="live-name" style="font-size:11px; font-weight:bold; color:#15803d; margin-top:5px;"></p>
+        </div>
         <div id="status"></div>
     </div>
-    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 20px;">v6.2 - TTHV Special Fix</p>
+    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 20px;">v6.5 - WebApp Stable Link</p>
 </div>
 
 <div class="main-content">
@@ -72,11 +78,12 @@
 
 <script type="module">
     import { db, ref, set } from '../js/firebase-config.js';
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
+    
+    // LINK WEB APP MỚI NHẤT CỦA BẠN
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxYQW1o_VKQAhaJPJsUzXxR0AJD7Y7gR5tlMrcFKDGcgOGldUee66HtiwO37r2cuma3/exec";
 
     let globalDataHocVien = [];
 
-    // Hàm lấy giá trị an toàn, xử lý cả Rich Text và Ô gộp
     const getSafeVal = (sheet, addr) => {
         const cell = sheet.getCell(addr);
         const target = cell.isMerged && cell.master ? cell.master : cell;
@@ -100,32 +107,26 @@
         const type = document.getElementById('templateType').value;
         const fileEx = document.getElementById('fileExcel').files[0];
         const fileZi = document.getElementById('fileZip').files[0];
-        if (!fileEx) return alert("Chọn file Excel!");
+        if (!fileEx) return alert("Vui lòng chọn file!");
         
         try {
-            document.getElementById('btnPreview').innerText = "⏳ ĐANG QUÉT ẢNH...";
+            document.getElementById('btnPreview').innerText = "⏳ ĐANG PHÂN TÍCH...";
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(await fileEx.arrayBuffer());
             const sheet = workbook.worksheets[0];
             let data = [];
 
-            // 1. TRÍCH XUẤT ẢNH TRƯỚC (Dò tất cả các cột từ H đến K để tránh sót ảnh)
+            // 1. Quét ảnh diện rộng (Cột H trở đi)
             const anhExcel = {};
             sheet.getImages().forEach(img => {
                 const row = img.range.tl.nativeRow;
-                const col = img.range.tl.nativeCol;
-                // Nếu ảnh nằm từ cột index 7 (H) trở đi
-                if (col >= 7) {
-                    anhExcel[row] = workbook.getImage(img.imageId).buffer;
-                }
+                if (img.range.tl.nativeCol >= 7) anhExcel[row] = workbook.getImage(img.imageId).buffer;
             });
 
-            // 2. LẤY MST & TÊN CTY (Xử lý ô gộp mẫu TTHV)
+            // 2. Tên Công ty & MST
             if (type === 'excel_img') {
-                const rawCty = getSafeVal(sheet, 'A3');
-                document.getElementById('inputTenCty').value = rawCty.replace(/Công ty[:\s]*/gi, "").trim();
-                const rawMST = getSafeVal(sheet, 'A4');
-                document.getElementById('inputMST').value = rawMST.replace(/Mã số thuế[:\s]*/gi, "").trim();
+                document.getElementById('inputTenCty').value = getSafeVal(sheet, 'A3').replace(/Công ty[:\s]*/gi, "");
+                document.getElementById('inputMST').value = getSafeVal(sheet, 'A4').replace(/Mã số thuế[:\s]*/gi, "");
             } else {
                 const infoText = getSafeVal(sheet, 'A8');
                 document.getElementById('inputTenCty').value = infoText.split('\n')[0];
@@ -133,92 +134,84 @@
                 if (mstMatch) document.getElementById('inputMST').value = mstMatch[0];
             }
 
-            // 3. XỬ LÝ ZIP NẾU CÓ
-            let anhTuZip = {};
-            if (type === 'zip_img' && fileZi) {
-                const zipData = await JSZip.loadAsync(fileZi);
-                for (let f in zipData.files) {
-                    if (f.match(/\.(jpg|jpeg|png)$/i)) {
-                        const rawName = f.split('/').pop().split('.').shift();
-                        anhTuZip[superClean(rawName)] = await zipData.files[f].async("arraybuffer");
-                    }
-                }
-            }
-
-            // 4. DUYỆT DANH SÁCH (Bắt đầu từ dòng 10)
+            // 3. Xử lý nhân viên
             sheet.eachRow((row, i) => {
                 const sttVal = row.getCell(1).text.trim();
                 if (i >= 10 && sttVal && !isNaN(sttVal)) {
-                    if (type === 'excel_img') {
-                        // Cấu trúc Mẫu 1 TTHV
-                        const hoten = getSafeVal(sheet, `B${i}`);
-                        data.push({
-                            stt: data.length+1, hoten: hoten, gioitinh: getSafeVal(sheet, `C${i}`),
-                            ngaysinh: row.getCell(4).text, quoctich: getSafeVal(sheet, `E${i}`),
-                            congviec: getSafeVal(sheet, `F${i}`), cccd: getSafeVal(sheet, `G${i}`),
-                            manv: getSafeVal(sheet, `G${i}`), donvi: getSafeVal(sheet, 'A2') || "VDC",
-                            noidung: getSafeVal(sheet, `H${i}`),
-                            photo: anhExcel[i-1] || anhTuZip[superClean(hoten)] || null
-                        });
-                    } else {
-                        // Cấu trúc Mẫu 2 Long Phương
-                        const hoten = getSafeVal(sheet, `C${i}`);
-                        data.push({
-                            stt: data.length+1, hoten: hoten, manv: getSafeVal(sheet, `B${i}`),
-                            congviec: getSafeVal(sheet, `D${i}`), cccd: getSafeVal(sheet, `E${i}`),
-                            ngaysinh: row.getCell(6).text, gioitinh: getSafeVal(sheet, `G${i}`),
-                            quoctich: getSafeVal(sheet, `H${i}`), donvi: getSafeVal(sheet, `I${i}`),
-                            noidung: getSafeVal(sheet, `J${i}`), photo: anhTuZip[superClean(hoten)] || null
-                        });
-                    }
+                    const hoten = (type === 'excel_img') ? getSafeVal(sheet, `B${i}`) : getSafeVal(sheet, `C${i}`);
+                    data.push({
+                        stt: data.length+1,
+                        hoten: hoten,
+                        ngaysinh: (type === 'excel_img') ? row.getCell(4).text : row.getCell(6).text,
+                        cccd: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `E${i}`),
+                        manv: (type === 'excel_img') ? getSafeVal(sheet, `G${i}`) : getSafeVal(sheet, `B${i}`),
+                        gioitinh: (type === 'excel_img') ? getSafeVal(sheet, `C${i}`) : getSafeVal(sheet, `G${i}`),
+                        quoctich: (type === 'excel_img') ? getSafeVal(sheet, `E${i}`) : getSafeVal(sheet, `H${i}`),
+                        congviec: (type === 'excel_img') ? getSafeVal(sheet, `F${i}`) : getSafeVal(sheet, `D${i}`),
+                        donvi: (type === 'excel_img') ? (getSafeVal(sheet, 'A2') || "VDC") : getSafeVal(sheet, `I${i}`),
+                        noidung: (type === 'excel_img') ? getSafeVal(sheet, `H${i}`) : getSafeVal(sheet, `J${i}`),
+                        photo: anhExcel[i-1] || null
+                    });
                 }
             });
 
             globalDataHocVien = data;
-            const tbody = document.querySelector("#previewTable tbody");
-            tbody.innerHTML = data.map(s => {
-                const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
-                return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
-            }).join('');
-            
+            renderTable(data);
             document.getElementById('syncSection').style.display = 'block';
             document.getElementById('btnSync').style.display = 'block';
             document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT LẠI";
+        } catch (err) { alert("Lỗi: " + err.message); }
+    }
 
-        } catch (err) {
-            console.error(err);
-            alert("Lỗi: " + err.message);
-            document.getElementById('btnPreview').innerText = "🔍 TRÍCH XUẤT DỮ LIỆU";
-        }
+    function renderTable(data) {
+        const tbody = document.querySelector("#previewTable tbody");
+        tbody.innerHTML = data.map(s => {
+            const url = s.photo ? URL.createObjectURL(new Blob([s.photo])) : "";
+            return `<tr><td>${s.stt}</td><td>${url ? `<img src="${url}" class="preview-img">` : '❌'}</td><td>${s.hoten}</td><td>${s.ngaysinh}</td><td>${s.gioitinh}</td><td>${s.cccd}</td><td>${s.congviec}</td><td>${s.manv}</td><td>${s.quoctich}</td><td>${s.donvi}</td><td>${s.noidung}</td></tr>`;
+        }).join('');
     }
 
     async function handleSync() {
         const mst = document.getElementById('inputMST').value.trim();
         const ten = document.getElementById('inputTenCty').value.trim();
-        if(!mst) return alert("Nhập MST!");
+        if(!mst) return alert("Vui lòng nhập MST!");
+
         document.getElementById('pBar').style.display = 'block';
         document.getElementById('btnSync').style.display = 'none';
+        
         for (let i = 0; i < globalDataHocVien.length; i++) {
             const s = globalDataHocVien[i];
             const pct = Math.round(((i + 1) / globalDataHocVien.length) * 100);
             document.getElementById('progressFill').style.width = pct + "%";
             document.getElementById('status').innerText = `Đang đồng bộ: ${s.hoten}`;
+
             let driveUrl = "";
             if (s.photo) {
                 const base64 = btoa(new Uint8Array(s.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
                 try {
-                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) });
+                    const res = await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) 
+                    });
                     const resJson = await res.json();
-                    if (resJson.status === "success") driveUrl = resJson.fileUrl;
-                } catch(e) {}
+                    if (resJson.status === "success") {
+                        driveUrl = resJson.fileUrl;
+                        document.getElementById('live-preview-box').style.display = 'block';
+                        document.getElementById('live-img').src = driveUrl;
+                        document.getElementById('live-name').innerText = s.hoten;
+                    }
+                } catch(e) { console.error("Lỗi GAS: ", e); }
             }
-            await set(ref(db, `HocVien/${mst}/${s.cccd}`), { ...s, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() });
+            
+            await set(ref(db, `HocVien/${mst}/${s.cccd}`), { 
+                ...s, PhotoUrl: driveUrl, photo: null, NgayCapNhat: new Date().toISOString() 
+            });
         }
-        document.getElementById('status').innerText = "✅ HOÀN TẤT!";
+        document.getElementById('status').innerText = "✅ ĐỒNG BỘ THÀNH CÔNG v6.5";
     }
 
-    document.getElementById('btnPreview').addEventListener('click', handlePreview);
-    document.getElementById('btnSync').addEventListener('click', handleSync);
+    document.getElementById('btnPreview').onclick = handlePreview;
+    document.getElementById('btnSync').onclick = handleSync;
 </script>
 </body>
 </html>
