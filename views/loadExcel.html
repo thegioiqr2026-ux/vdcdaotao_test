@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>VDC Thông tin học viên v5.5</title>
+    <title>VDC Thông tin học viên v5.6</title>
     <script src="../js/exceljs.min.js"></script>
     <script src="../js/jszip.min.js"></script>
     <script src="../js/firebase-config.js" type="module"></script>
@@ -20,8 +20,13 @@
         .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; transition: 0.2s; }
         .btn-preview { background: #3b82f6; }
         .btn-sync { background: #10b981; display: none; }
+        
+        /* Progress & Live Preview */
         .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; margin-top: 10px; display: none; overflow: hidden; }
         #progressFill { height: 100%; width: 0%; background: #10b981; transition: width 0.2s; }
+        #live-preview-container { margin-top: 15px; text-align: center; display: none; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 8px; background: #fff; }
+        #live-img { width: 80px; height: 110px; object-fit: cover; border-radius: 4px; border: 2px solid #10b981; margin-bottom: 5px; }
+        
         .preview-img { width: 40px; height: 55px; object-fit: cover; border-radius: 2px; }
         #status { margin-top: 8px; font-size: 11px; text-align: center; color: #3b82f6; font-weight: bold; }
     </style>
@@ -50,9 +55,16 @@
     <div id="syncSection" style="display:none;">
         <button id="btnSync" class="btn btn-sync">🚀 ĐỒNG BỘ VDC CLOUD</button>
         <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
+        
+        <div id="live-preview-container">
+            <p style="font-size: 10px; color: #64748b; margin-bottom: 5px;">ẢNH VỪA TẢI LÊN DRIVE:</p>
+            <img id="live-img" src="" alt="Live Preview">
+            <p id="live-name" style="font-size: 11px; font-weight: bold; color: #10b981;"></p>
+        </div>
+
         <div id="status"></div>
     </div>
-    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 15px;">v5.5 - Photo Sync Ready</p>
+    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 15px;">v5.6 - Live Preview Mode</p>
 </div>
 
 <div class="main-content">
@@ -71,8 +83,6 @@
 
 <script type="module">
     import { db, ref, set } from '../js/firebase-config.js';
-    
-    // ĐÃ TÍCH HỢP LINK WEB APP CỦA BẠN
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxRNpGczbDYLXpJliEOHhcubc41qm-x7DW47MsVz1W6Ne3BJTMWYs98ciWE5SkY2MWY/exec";
 
     let globalDataHocVien = [];
@@ -90,7 +100,6 @@
         const status = document.getElementById('status');
         if (!fileEx) return alert("Chọn file Excel!");
 
-        status.innerText = "⏳ Đang phân tích dữ liệu...";
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(await fileEx.arrayBuffer());
         const sheet = workbook.worksheets[0];
@@ -130,18 +139,16 @@
             document.getElementById('inputMST').value = sheet.getCell('A4').text.replace(/Mã số thuế[:\s]*/gi, "").trim();
             const anhExcel = {};
             sheet.getImages().forEach(img => { if (img.range.tl.nativeCol === 8) anhExcel[img.range.tl.nativeRow] = workbook.getImage(img.imageId).buffer; });
-            let nhomTam = "";
             sheet.eachRow((row, i) => {
                 if (i >= 10) {
                     const colA = row.getCell(1).text.trim();
                     const colB = row.getCell(2).text.trim();
-                    if (colA && !colB) nhomTam = colA;
-                    else if (colB && !isNaN(colA)) {
+                    if (colB && !isNaN(colA)) {
                         data.push({
                             stt: data.length+1, hoten: colB, gioitinh: row.getCell(3).text,
                             ngaysinh: row.getCell(4).text, quoctich: row.getCell(5).text,
                             congviec: row.getCell(6).text, cccd: row.getCell(7).text,
-                            manv: row.getCell(7).text, donvi: nhomTam,
+                            manv: row.getCell(7).text, donvi: sheet.getCell('A2').text,
                             noidung: row.getCell(8).text, photo: anhExcel[i-1] || null
                         });
                     }
@@ -157,7 +164,6 @@
         }).join('');
         document.getElementById('syncSection').style.display = 'block';
         document.getElementById('btnSync').style.display = 'block';
-        status.innerText = `✅ Đã trích xuất ${data.length} nhân sự.`;
     });
 
     document.getElementById('btnSync').addEventListener('click', async () => {
@@ -166,6 +172,10 @@
         if(!mst) return alert("Vui lòng nhập Mã số thuế!");
 
         const fill = document.getElementById('progressFill');
+        const liveContainer = document.getElementById('live-preview-container');
+        const liveImg = document.getElementById('live-img');
+        const liveName = document.getElementById('live-name');
+        
         document.getElementById('pBar').style.display = 'block';
         document.getElementById('btnSync').style.display = 'none';
 
@@ -173,30 +183,35 @@
             const s = globalDataHocVien[i];
             const pct = Math.round(((i + 1) / globalDataHocVien.length) * 100);
             fill.style.width = pct + "%";
-            document.getElementById('status').innerText = `Đang đồng bộ: ${s.hoten} (${pct}%)`;
+            document.getElementById('status').innerText = `Đang tải: ${s.hoten} (${pct}%)`;
 
             let driveUrl = "";
             if (s.photo) {
                 const base64 = btoa(new Uint8Array(s.photo).reduce((d, b) => d + String.fromCharCode(b), ''));
                 try {
-                    // Cơ chế gửi POST và nhận phản hồi URL từ Google Apps Script
                     const res = await fetch(GAS_URL, { 
                         method: 'POST', 
                         body: JSON.stringify({ type: "upload", mst: mst, tenCty: ten, cccd: s.cccd, base64: base64 }) 
                     });
                     const resJson = await res.json();
-                    if (resJson.status === "success") driveUrl = resJson.fileUrl;
+                    if (resJson.status === "success") {
+                        driveUrl = resJson.fileUrl;
+                        // Hiển thị ảnh vừa tải lên xong
+                        liveContainer.style.display = 'block';
+                        liveImg.src = driveUrl;
+                        liveName.innerText = s.hoten;
+                    }
                 } catch(e) { console.error("Lỗi upload ảnh cho: " + s.hoten); }
             }
             
-            // LƯU VÀO FIREBASE KÈM PHOTOURL THẬT
             await set(ref(db, `HocVien/${mst}/${s.cccd}`), { 
                 hoten: s.hoten, ngaysinh: s.ngaysinh, gioitinh: s.gioitinh, cccd: s.cccd, 
                 congviec: s.congviec, manv: s.manv, quoctich: s.quoctich, donvi: s.donvi, 
                 noidung: s.noidung, PhotoUrl: driveUrl, NgayCapNhat: new Date().toISOString() 
             });
         }
-        document.getElementById('status').innerText = "✅ ĐỒNG BỘ HOÀN TẤT v5.5";
+        document.getElementById('status').innerText = "✅ ĐỒNG BỘ HOÀN TẤT v5.6";
+        setTimeout(() => { liveContainer.style.display = 'none'; }, 5000); // Ẩn preview sau 5s hoàn tất
     });
 </script>
 </body>
